@@ -57,7 +57,11 @@ public class SamplePropNetStateMachine extends StateMachine {
 	 */
 	@Override
 	public boolean isTerminal(MachineState state) {
-		// TODO: Compute whether the MachineState is terminal.
+		Proposition terminal = propNet.getTerminalProposition();
+		Map<GdlTerm, Proposition> props = propNet.getBasePropositions();
+		for(GdlSentence s : state.getContents()){
+			if(props.get(s.toTerm()) == terminal) return true;
+		}
 		return false;
 	}
 	
@@ -71,8 +75,17 @@ public class SamplePropNetStateMachine extends StateMachine {
 	@Override
 	public int getGoal(MachineState state, Role role)
 	throws GoalDefinitionException {
-		// TODO: Compute the goal for role in state.
-		return -1;
+		Set<Proposition> goals = propNet.getGoalPropositions().get(role);
+		Map<GdlTerm, Proposition> props = propNet.getBasePropositions();
+		Proposition goal = null;
+		for(GdlSentence s : state.getContents()){
+			if(goals.contains(props.get(s.toTerm()))){
+				if(goal != null) throw new GoalDefinitionException(state, role);
+				goal = props.get(s.toTerm());
+			}
+		}
+		if(goal == null) throw new GoalDefinitionException(state, role);
+		return getGoalValue(goal);
 	}
 	
 	/**
@@ -82,8 +95,7 @@ public class SamplePropNetStateMachine extends StateMachine {
 	 */
 	@Override
 	public MachineState getInitialState() {
-		// TODO: Compute the initial state.
-		return null;
+		return updateStateMachine();
 	}
 	
 	/**
@@ -102,7 +114,12 @@ public class SamplePropNetStateMachine extends StateMachine {
 	@Override
 	public MachineState getNextState(MachineState state, List<Move> moves)
 	throws TransitionDefinitionException {
-		// TODO: Compute the next state.
+		Set<Component > trueComp = new HashSet<Component >();
+		Map<GdlTerm, Proposition> base = propNet.getBasePropositions();
+		for(GdlSentence s : state.getContents()){
+			trueComp.add(base.get(s.toTerm()));
+		}
+		
 		return null;
 	}
 	
@@ -132,7 +149,34 @@ public class SamplePropNetStateMachine extends StateMachine {
 		List<Proposition> propositions = new ArrayList<Proposition>(propNet.getPropositions());
 		
 	    // TODO: Compute the topological ordering.		
+		Set<Component> solved = new HashSet<Component>();
+		solved.addAll(propNet.getBasePropositions().values());
+		solved.addAll(propNet.getInputPropositions().values());
+		int initSize = solved.size();
 		
+		while(propositions.size() > 0){
+			for(Component comp : components){
+				boolean allSolved = true;
+				for(Component c : comp.getInputs()){
+					if(!allSolved) break;
+					if(!solved.contains(c)) allSolved = false;
+				}
+				if(allSolved) solved.add(comp);
+			}
+			components.removeAll(solved);
+			for(Proposition prop : propositions){
+				boolean allSolved=true;
+				for(Component comp : prop.getInputs()){
+					if(!allSolved) break;
+					if(!solved.contains(comp)) allSolved = false;
+				}
+				if(allSolved){
+					solved.add(prop);
+					order.add(prop);
+				}
+			}
+			propositions.removeAll(solved);
+		}		
 		return order;
 	}
 	
