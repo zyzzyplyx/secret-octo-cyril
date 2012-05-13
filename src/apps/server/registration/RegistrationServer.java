@@ -78,11 +78,9 @@ public class RegistrationServer {
 					Socket connection = exposedSide.accept();
 					String in = HttpReader.readAsServer(connection);
 					if (!in.endsWith("\n")) in += "\n";
-					System.out.println("Writing to player " + in);
 					this.playerWriter.write(in);
 					this.playerWriter.flush();
 					String out = this.playerReader.readLine();
-					System.out.println("Read from player " + out);
 					if (out != null) HttpWriter.writeAsServer(connection, out);
 					connection.close();
 				} catch (IOException e) {
@@ -110,9 +108,13 @@ public class RegistrationServer {
 	}
 	
 	static public void main(String argv[]) throws IOException {
-		ServerSocket socket = new ServerSocket(DEFAULT_REG_PORT);
+		InetAddress address = NetworkUtils.getALocalIPAddress();
+		ServerSocket socket = new ServerSocket(DEFAULT_REG_PORT, 0, address);
 		
 		RegistrationServer regServer = new RegistrationServer();
+		System.out.println("Registration server started on " + 
+				socket.getInetAddress().getHostAddress() + ":"
+				+ socket.getLocalPort());
 		
 		while (true) {
 			Socket newConnection = socket.accept();
@@ -127,7 +129,6 @@ public class RegistrationServer {
 				continue;
 			}
 			String[] tokens = message.split("\\s+");
-			System.out.println("Recieved: " + message);
 			
 			boolean keepAlive = false;
 			if (tokens.length > 0) {
@@ -204,7 +205,13 @@ public class RegistrationServer {
 		// Attempt to ping the player at the given URL
 		PingRequestThread pingThread = 
 				new PingRequestThread(host, playerPort, name);
-		pingThread.run();
+		pingThread.start();
+		try {
+			Thread.sleep(1000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		pingThread.interrupt();
 		return pingThread.result;
 	}
 
@@ -223,6 +230,8 @@ public class RegistrationServer {
 	static public String 
 	sendRegistration (Socket serverSocket, String playerName, String address, int port) 
 			throws IOException {
+		
+		playerName = playerName.replace(" ", "");
 		
 		String message = REGISTRATION_CMD + " " + playerName + " " + address + " " + port + "\n";
 		PrintWriter out = new PrintWriter(serverSocket.getOutputStream(), true);

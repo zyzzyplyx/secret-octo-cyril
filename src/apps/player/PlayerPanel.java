@@ -10,6 +10,9 @@ import java.awt.event.MouseListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -27,6 +30,7 @@ import javax.swing.border.TitledBorder;
 
 import player.GamePlayer;
 import player.gamer.SingleGameGamer;
+import util.networking.NetworkUtils;
 import util.reflection.ProjectSearcher;
 import util.ui.NativeUI;
 import apps.player.config.ConfigPanel;
@@ -72,6 +76,7 @@ public final class PlayerPanel extends JPanel implements WindowListener, MouseLi
 
 	private final JTextField portTextField;
 	private final JTextField regServerField;
+	private final JComboBox ipComboBox;
 
 	private final JComboBox typeComboBox;
 	
@@ -81,13 +86,14 @@ public final class PlayerPanel extends JPanel implements WindowListener, MouseLi
 	
 	private List<Class<?>> gamers = ProjectSearcher.getAllClassesThatAre(SingleGameGamer.class);
 
-	public PlayerPanel()
+	public PlayerPanel() throws SocketException, UnknownHostException
 	{
 		super(new GridBagLayout());
 
 		portTextField = new JTextField(defaultPort.toString());
 		regServerField = new JTextField();
 		typeComboBox = new JComboBox();
+		ipComboBox = new JComboBox();
 		createButton = new JButton(createButtonMethod(this));
 		abortButton = new JButton(abortButtonMethod(this));
 		playersTabbedPane = new JTabbedPane();
@@ -95,6 +101,7 @@ public final class PlayerPanel extends JPanel implements WindowListener, MouseLi
 
 		portTextField.setColumns(15);
 
+		// Add the gamers
 		List<Class<?>> gamersCopy = new ArrayList<Class<?>>(gamers);
 		for(Class<?> gamer : gamersCopy)
 		{
@@ -105,6 +112,11 @@ public final class PlayerPanel extends JPanel implements WindowListener, MouseLi
 			} catch(Exception ex) {
 			    gamers.remove(gamer);
 			}
+		}
+		
+		// Add the available IP addresses
+		for (InetAddress address : NetworkUtils.getLocalIPList()) {
+			ipComboBox.addItem(address.getHostAddress());
 		}
 
 		JPanel managerPanel = new JPanel(new GridBagLayout());
@@ -117,8 +129,10 @@ public final class PlayerPanel extends JPanel implements WindowListener, MouseLi
 		managerPanel.add(typeComboBox, new GridBagConstraints(1, 1, 1, 1, 1.0, 0.0, GridBagConstraints.CENTER, GridBagConstraints.BOTH, new Insets(5, 5, 5, 5), 5, 5));
 		managerPanel.add(new JLabel("Reg Server:"), new GridBagConstraints(0, 2, 1, 1, 0.0, 0.0, GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(5, 5, 5, 5), 5, 5));
 		managerPanel.add(regServerField, new GridBagConstraints(1, 2, 1, 1, 1.0, 0.0, GridBagConstraints.CENTER, GridBagConstraints.BOTH, new Insets(5, 5, 5, 5), 5, 5));
-		managerPanel.add(createButton, new GridBagConstraints(1, 3, 1, 1, 1.0, 1.0, GridBagConstraints.SOUTH, GridBagConstraints.HORIZONTAL, new Insets(5, 5, 40, 5), 0, 0));
-		managerPanel.add(abortButton, new GridBagConstraints(1, 3, 1, 1, 1.0, 1.0, GridBagConstraints.SOUTH, GridBagConstraints.HORIZONTAL, new Insets(5, 5, 5, 5), 0, 0));
+		managerPanel.add(new JLabel("IP Address:"), new GridBagConstraints(0, 3, 1, 1, 0.0f, 0.0, GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(5, 5, 5,5), 5, 5));
+		managerPanel.add(ipComboBox, new GridBagConstraints(1, 3, 1, 1, 1.0, 0.0, GridBagConstraints.CENTER, GridBagConstraints.BOTH, new Insets(5, 5, 5, 5), 5, 5));
+		managerPanel.add(createButton, new GridBagConstraints(1, 4, 1, 1, 1.0, 1.0, GridBagConstraints.SOUTH, GridBagConstraints.HORIZONTAL, new Insets(5, 5, 40, 5), 0, 0));
+		managerPanel.add(abortButton, new GridBagConstraints(1, 4, 1, 1, 1.0, 1.0, GridBagConstraints.SOUTH, GridBagConstraints.HORIZONTAL, new Insets(5, 5, 5, 5), 0, 0));
 		
 		JPanel playersPanel = new JPanel(new GridBagLayout());
 		playersPanel.setBorder(new TitledBorder("Players"));
@@ -163,10 +177,12 @@ public final class PlayerPanel extends JPanel implements WindowListener, MouseLi
 					int regPort = -1;
 					if (splitAddress.length > 1) {
 			            regHost = splitAddress[0];
-			            regPort = Integer.parseInt(splitAddress[1]);
+			            regPort = Integer.parseInt(splitAddress[1].replace(" ", ""));
 					}
+					
+					String host = panel.ipComboBox.getSelectedItem().toString();
 		            
-					GamePlayer player = new GamePlayer(port, gamer);
+					GamePlayer player = new GamePlayer(host, port, gamer);
 					player.addObserver(networkPanel);
 					player.setRegistrationServer(regHost, regPort);
 					player.start();					

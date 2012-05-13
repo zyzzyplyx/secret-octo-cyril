@@ -35,8 +35,8 @@ public final class GamePlayer extends Thread implements Subject
     private InetAddress address;
     private final List<Observer> observers;
     private String instanceName;
-    private String regServerIP = RegistrationServer.DEFAULT_REG_IP;
-    private int regServerPort = RegistrationServer.DEFAULT_REG_PORT;
+    private String regServerIP = null;
+    private int regServerPort = -1;
 
 	private PlayerServerMode serverMode;
 	private boolean switchServerMode = false;
@@ -176,8 +176,9 @@ public final class GamePlayer extends Thread implements Subject
 			}
 		};
 		
-		registrationThread.start();
-		
+		if (this.regServerIP != null) {
+			registrationThread.start();
+		}
 		
 		// Wait for GGP messages
 		System.out.println(gamer.getName() + " listening ...");

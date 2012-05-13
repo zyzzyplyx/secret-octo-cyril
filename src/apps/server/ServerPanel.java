@@ -191,12 +191,8 @@ public final class ServerPanel extends JPanel
 	protected void refreshRegServer() {
 		try {
 			String addressString = this.regServerField.getText(); 
-			String[] splitAddress = addressString.split(":");
-			if (splitAddress.length < 2) return;
-            String hostname = splitAddress[0];
-            int port = Integer.parseInt(splitAddress[1]);
-            
-			Socket socket = new Socket(hostname, port);
+			Socket socket = NetworkUtils.getSocketFromString(addressString);
+			if (socket == null) return;
 			registeredPlayers = RegistrationServer.queryList(socket);
 			socket.close();
 		} catch (UnknownHostException e) {

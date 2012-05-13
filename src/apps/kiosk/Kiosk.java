@@ -279,7 +279,7 @@ public final class Kiosk extends JPanel implements ActionListener, ItemListener,
                 if (kioskServer != null && !kioskServer.getMatch().isCompleted()) {
                 	theHumanPlayer.interrupt();
                 	setupHumanPlayer();
-                	kioskServer.abort();
+                	kioskServer.interrupt();
                 	kioskServer = null;
                 }
                 
@@ -290,9 +290,8 @@ public final class Kiosk extends JPanel implements ActionListener, ItemListener,
                 Match match = new Match(matchId, startClock, playClock, game);
                 theHumanGamer.setCanvas(theGame.getCanvas());
 
-                // Stop old player if it's not the right type
-                String computerPlayerName = (String) playerComboBox.getSelectedItem();
-                if(theComputerPlayer != null && !theComputerPlayer.getGamer().getName().equals(computerPlayerName)) {
+                
+                if(theComputerPlayer != null) {
                     this.killComputerPlayer();
                 }
                 	

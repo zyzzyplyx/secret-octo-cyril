@@ -1,7 +1,15 @@
 package apps.server;
 
+import java.io.IOException;
+import java.net.Socket;
+import java.net.URL;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import apps.server.registration.RegistrationServer;
 
 import server.GameServer;
 import util.configuration.ProjectConfiguration;
@@ -10,6 +18,7 @@ import util.game.Game;
 import util.game.GameRepository;
 import util.game.LocalGameRepository;
 import util.match.Match;
+import util.networking.NetworkUtils;
 import util.statemachine.Role;
 import util.statemachine.exceptions.GoalDefinitionException;
 
@@ -87,10 +96,12 @@ public class ConsoleMatchServer {
 		System.out.println(
 				  "-l   List available games. Use the string before the dash to reference the entry.\n"
 				+ "-g   Specify the name of the game to player\n"
-				+ "-p   List the player addresses with format <ip address>:<port number>\n"
+				+ "-p   List the player addresses with format <ip address>:<port number>.\n"
+				+ "     These values may also be valid registration names if the -r flag is set.\n"
 				+ "-n   List the player names in the same order as the addresses (optional)\n"
 				+ "-s   Sets the start clock in seconds\n"
 				+ "-t   Sets the play clock in seconds\n"
+				+ "-r   Sets the registration server\n"
 				+ "-h   Display this help message\n"
 				);
 	}
@@ -123,6 +134,7 @@ public class ConsoleMatchServer {
 		List<String> players = getParameters (args, "-p");
 		List<String> hosts = new ArrayList<String> ();
 		List<Integer> ports = new ArrayList<Integer> ();
+		Map<String,URL> regPlayers = getRegisteredPlayers(args);
 
 		// Make sure there are enough players for the roles in the game
 		int numRoles = Role.computeRoles(game.getRules()).size();
@@ -145,21 +157,27 @@ public class ConsoleMatchServer {
 		for (String address : players) {
 			
 			int colonIdx = address.indexOf(':');
+			URL regPlayer = regPlayers.get(address);
 			
-			if (colonIdx == -1) {
+			if (colonIdx == -1 && regPlayer == null) {
 				System.out.println("Invalid player address: " + address);
 				System.exit(1);
 			}
 			
-			String host = address.substring(0, colonIdx);
-			hosts.add(host);
-			
-			try {
-				Integer port = Integer.parseInt(address.substring(colonIdx + 1));
-				ports.add(port);
-			} catch (NumberFormatException e){
-				System.out.println("Port number invalid for address: " + address);
-				System.exit(1);
+			if (regPlayer == null) {
+				String host = address.substring(0, colonIdx);
+				hosts.add(host);
+				
+				try {
+					Integer port = Integer.parseInt(address.substring(colonIdx + 1));
+					ports.add(port);
+				} catch (NumberFormatException e){
+					System.out.println("Port number invalid for address: " + address);
+					System.exit(1);
+				}
+			} else {
+				hosts.add(regPlayer.getHost());
+				ports.add(regPlayer.getPort());
 			}
 		}
 		
@@ -198,7 +216,7 @@ public class ConsoleMatchServer {
 			List<Integer> goals = server.getGoals();
 			
 			for (int i = 0; i < goals.size(); i++) {
-				System.out.println(names.get(i) + ": " + goals.get(i));
+				System.out.println(names.get(i) + "(" + players.get(i) + "): " + goals.get(i));
 			}
 		} catch (GoalDefinitionException e) {
 			System.out.println("Could not compute goals, check game description");
@@ -235,6 +253,23 @@ public class ConsoleMatchServer {
 		
 	}
 	
+	private static Map<String, URL> getRegisteredPlayers(String args[]) {
+		List<String> regServersRaw = getParameters (args, "-r");
+		Map<String,URL> players = new HashMap<String, URL>();
+		if (regServersRaw.size() > 0) {
+			try {
+				Socket serverSocket = NetworkUtils.getSocketFromString(regServersRaw.get(0));
+				players = RegistrationServer.queryList(serverSocket);
+			} catch (UnknownHostException e) {
+				System.out.println("Registration server could not be found");
+			} catch (IOException e) {
+				System.out.println("Failure connecting to registration server");
+			}
+			
+		}
+		return players;
+	}
+	
 	// List the games in both repositories
 	private static void listMode(String[] args) {
 		
@@ -244,7 +279,20 @@ public class ConsoleMatchServer {
 				
 		System.out.println("---------- Local games:");
 		printRepositoryContents(localRepository);
-				
+		System.out.println();
+		
+		List<String> regServersRaw = getParameters (args, "-r");
+		if (regServersRaw.size() > 0) {
+			System.out.println("--------- Players registered on " + regServersRaw.get(0));
+			Map<String,URL> players = getRegisteredPlayers(args);
+			if (players.size() > 0) {
+				for (String name : players.keySet()) {
+					System.out.println(name);
+				}
+			} else {
+				System.out.println("--NONE--");
+			}
+		}
 	}
 
 }
