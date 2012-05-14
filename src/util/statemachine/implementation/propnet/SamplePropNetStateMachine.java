@@ -57,7 +57,7 @@ public class SamplePropNetStateMachine extends StateMachine {
     private MachineState computeInitialState()
 	{
     	Proposition init = propNet.getInitProposition();
-    	List<Proposition> initProp = new ArrayList<Proposition>();
+    	Set<Proposition> initProp = new HashSet<Proposition>();
     	initProp.add(init);
     	return updateStateMachine(initProp);
 	}
@@ -128,7 +128,7 @@ public class SamplePropNetStateMachine extends StateMachine {
 		Map<GdlTerm, Proposition> termToProps = propNet.getInputPropositions();
 		List<GdlTerm> moveTerms = toDoes(moves);
 		
-		List<Proposition> inputProps = new ArrayList<Proposition>();
+		Set<Proposition> inputProps = new HashSet<Proposition>();
 		for (GdlTerm term : moveTerms) {
 			inputProps.add(termToProps.get(term));
 		}
@@ -142,8 +142,29 @@ public class SamplePropNetStateMachine extends StateMachine {
 	}
 	
     
-    private MachineState updateStateMachine(List<Proposition> inputProps) {
+    private MachineState updateStateMachine(Set<Proposition> inputProps) {
+    	for(Proposition prop : ordering){
+    		boolean isTrue = true;
+    		for(Component input : prop.getInputs()){
+    			for(Component inProp : input.getInputs()){
+    				if(!inputProps.contains(inProp)){
+    					isTrue = false;
+    					break;
+    				}
+    			}
+    			if(!isTrue)break;
+    		}
+    		if(isTrue) inputProps.add(prop);
+    	}
     	return null;
+    }
+    
+    private MachineState makeStateFromProps(Set<Proposition> stateProps){
+    	Set<GdlSentence> contents = new HashSet<GdlSentence>();
+    	for(Proposition prop : stateProps){
+    		contents.add(prop.getName().toSentence());
+    	}
+    	return new MachineState(contents);
     }
     
 	
