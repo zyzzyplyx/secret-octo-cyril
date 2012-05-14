@@ -115,8 +115,13 @@ public class SamplePropNetStateMachine extends StateMachine {
 	@Override
 	public List<Move> getLegalMoves(MachineState state, Role role)
 	throws MoveDefinitionException {
-		// TODO: Compute legal moves.
-		return null;
+		Set<Proposition> legalProp = propNet.getLegalPropositions().get(role);
+		List<Move> moves = new ArrayList<Move>();
+		for(Proposition prop : legalProp){
+			Move m = new Move(prop.getName().toSentence());
+			moves.add(m);
+		}
+		return moves;
 	}
 	
 	/**
