@@ -41,8 +41,8 @@ public abstract class HeuristicGamer extends StateMachineGamer {
     
 	@Override
 	public StateMachine getInitialStateMachine() {	
-		//return new ProverStateMachine();
-		return new SamplePropNetStateMachine();
+		return new ProverStateMachine();
+		//return new SamplePropNetStateMachine();
 				
 	}
     

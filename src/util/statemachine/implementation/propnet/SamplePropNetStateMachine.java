@@ -69,12 +69,9 @@ public class SamplePropNetStateMachine extends StateMachine {
 	 */
     @Override
     public boolean isTerminal(MachineState state) {
-        Proposition terminal = propNet.getTerminalProposition();
-        Map<GdlTerm, Proposition> props = propNet.getBasePropositions();
-        for(GdlSentence s : state.getContents()){
-            if(props.get(s.toTerm())== terminal) return true;
-        }
-        return false;
+        clearPropNet();
+        updateStateMachine(state);
+        return propNet.getTerminalProposition().getValue();
     }
 	
 	/**
@@ -87,13 +84,15 @@ public class SamplePropNetStateMachine extends StateMachine {
     @Override
     public int getGoal(MachineState state, Role role)
     throws GoalDefinitionException {
+    	clearPropNet();
+    	updateStateMachine(state);
+    	
         Set<Proposition> goals = propNet.getGoalPropositions().get(role);
-        Map<GdlTerm, Proposition> props = propNet.getBasePropositions();
         Proposition goal = null;
-        for(GdlSentence s : state.getContents()){
-            if(goals.contains(props.get(s.toTerm()))){
+        for(Proposition g : goals){
+            if(g.getValue()){
                 if(goal != null) throw new GoalDefinitionException(state, role);
-                goal = props.get(s.toTerm());
+                goal = g;
             }
         }
         if(goal == null) throw new GoalDefinitionException(state, role);
@@ -116,8 +115,10 @@ public class SamplePropNetStateMachine extends StateMachine {
 	@Override
 	public List<Move> getLegalMoves(MachineState state, Role role)
 	throws MoveDefinitionException {
-		Set<Proposition> legalProp = propNet.getLegalPropositions().get(role);
+		clearPropNet();
 		updateStateMachine(state);
+		
+		Set<Proposition> legalProp = propNet.getLegalPropositions().get(role);
 		List<Move> moves = new ArrayList<Move>();
 		for(Proposition prop : legalProp){			
 			if(prop.getValue()){
@@ -126,8 +127,8 @@ public class SamplePropNetStateMachine extends StateMachine {
 			}
 		}
 		
-		System.out.println(state.getContents().toString());
-		System.out.println(moves.toString());
+		//System.out.println(state.getContents().toString());
+		//System.out.println(moves.toString());
 		
 		return moves;
 	}
@@ -169,8 +170,6 @@ public class SamplePropNetStateMachine extends StateMachine {
 			baseMap.get(s.toTerm()).setValue(true);
 		}
     	
-    	//stores the contents of the state to be returned
-    	Set<GdlSentence> contents = new HashSet<GdlSentence>();
     	//update the props in order
     	for(Proposition prop : ordering){
     		prop.setValue(prop.getSingleInput().getValue());
