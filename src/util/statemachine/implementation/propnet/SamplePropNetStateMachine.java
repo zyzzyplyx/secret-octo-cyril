@@ -52,14 +52,15 @@ public class SamplePropNetStateMachine extends StateMachine {
         roles = propNet.getRoles();
         ordering = getOrdering();
         initialState = computeInitialState();
+        System.out.println("order: "+ordering.toString());
+        System.out.println("initState: "+initialState.toString());
     }    
     
     private MachineState computeInitialState()
 	{
-    	Proposition init = propNet.getInitProposition();
-    	Set<Proposition> initProp = new HashSet<Proposition>();
-    	initProp.add(init);
-    	return updateStateMachine(initProp);
+    	propNet.getInitProposition().setValue(true);
+    	System.out.println("\ninits: "+propNet.getInitProposition().getOutputs().toString()+"\n\n");
+    	return updateStateMachine();
 	}
     
 	/**
@@ -71,7 +72,7 @@ public class SamplePropNetStateMachine extends StateMachine {
         Proposition terminal = propNet.getTerminalProposition();
         Map<GdlTerm, Proposition> props = propNet.getBasePropositions();
         for(GdlSentence s : state.getContents()){
-            if(props.get(s.toTerm()) == terminal) return true;
+            if(props.get(s.toTerm())== terminal) return true;
         }
         return false;
     }
@@ -115,12 +116,17 @@ public class SamplePropNetStateMachine extends StateMachine {
 	@Override
 	public List<Move> getLegalMoves(MachineState state, Role role)
 	throws MoveDefinitionException {
+		System.out.println(state);
 		Set<Proposition> legalProp = propNet.getLegalPropositions().get(role);
 		List<Move> moves = new ArrayList<Move>();
-		for(Proposition prop : legalProp){
-			Move m = new Move(prop.getName().toSentence());
-			moves.add(m);
+		for(Proposition prop : legalProp){			
+			GdlSentence s = prop.getName().toSentence();
+			if(state.getContents().contains(s)){
+				Move m = new Move(propNet.getLegalInputMap().get(prop).getName().toSentence());
+				moves.add(m);
+			}
 		}
+		System.out.println(moves);
 		return moves;
 	}
 	
@@ -129,49 +135,51 @@ public class SamplePropNetStateMachine extends StateMachine {
 	 */
 	@Override
 	public MachineState getNextState(MachineState state, List<Move> moves)
-	throws TransitionDefinitionException {		
+	throws TransitionDefinitionException {
+		clearPropNet();
+		System.exit(0);
+		
+    	//map moves to new inputs
 		Map<GdlTerm, Proposition> termToProps = propNet.getInputPropositions();
 		List<GdlTerm> moveTerms = toDoes(moves);
-		
-		Set<Proposition> inputProps = new HashSet<Proposition>();
-		for (GdlTerm term : moveTerms) {
-			inputProps.add(termToProps.get(term));
+		for (Move m : moves) {
+			termToProps.get(m.getContents().toTerm()).setValue(true);
 		}
-		
+		//map the base state to propositions
 		Map<GdlTerm, Proposition> baseMap = propNet.getBasePropositions();	
 		for (GdlSentence s : state.getContents()) {
-			inputProps.add(baseMap.get(s.toTerm()));
+			if(baseMap.containsKey(s.toTerm())){
+				baseMap.get(s.toTerm()).setValue(true);
+			}
 		}
-		
-		return updateStateMachine(inputProps);
+
+		return updateStateMachine();
 	}
 	
+	private void clearPropNet(){
+		Set<Proposition> props = propNet.getPropositions();
+		for(Proposition p : props){
+			p.setValue(false);
+		}
+	}
     
-    private MachineState updateStateMachine(Set<Proposition> inputProps) {
+    private MachineState updateStateMachine() {
+    	//stores the contents of the state to be returned
+    	Set<GdlSentence> contents = new HashSet<GdlSentence>();
+    	//update the props in order
     	for(Proposition prop : ordering){
     		boolean isTrue = true;
     		for(Component input : prop.getInputs()){
-    			for(Component inProp : input.getInputs()){
-    				if(!inputProps.contains(inProp)){
-    					isTrue = false;
-    					break;
-    				}
-    			}
-    			if(!isTrue)break;
+				if(!input.getValue()){//gets the value of logic gates based on preceding props
+					isTrue = false;
+					break;
+				}
     		}
-    		if(isTrue) inputProps.add(prop);
-    	}
-    	return null;
-    }
-    
-    private MachineState makeStateFromProps(Set<Proposition> stateProps){
-    	Set<GdlSentence> contents = new HashSet<GdlSentence>();
-    	for(Proposition prop : stateProps){
-    		contents.add(prop.getName().toSentence());
-    	}
+    		prop.setValue(isTrue);
+    		if(isTrue) contents.add(prop.getName().toSentence());
+    	}    	
     	return new MachineState(contents);
-    }
-    
+    }    
 	
 	/**
 	 * This should compute the topological ordering of propositions.
@@ -193,39 +201,33 @@ public class SamplePropNetStateMachine extends StateMachine {
 	       List<Proposition> order = new LinkedList<Proposition>();
 
 	       // All of the components in the PropNet
-	       List<Component> components = new ArrayList<Component>(propNet.getComponents());
-
-	       // All of the propositions in the PropNet.
-	       List<Proposition> propositions = new ArrayList<Proposition>(propNet.getPropositions());
-
-	       // TODO: Compute the topological ordering.
+	       Set<Component> components = new HashSet<Component>(propNet.getComponents());
+	       
 	       Set<Component> solved = new HashSet<Component>();
+	       solved.add(propNet.getInitProposition());
 	       solved.addAll(propNet.getBasePropositions().values());
 	       solved.addAll(propNet.getInputPropositions().values());
-	       int initSize = solved.size();
+	       
+	       int numToSolve = propNet.getPropositions().size() - solved.size();
 
-	       while(propositions.size() > 0){
-	           for(Component comp : components){
-	               boolean allSolved = true;
-	               for(Component c : comp.getInputs()){
-	                   if(!allSolved) break;
-	                   if(!solved.contains(c)) allSolved = false;
-	               }
-	               if(allSolved) solved.add(comp);
-	           }
-	           components.removeAll(solved);
-	           for(Proposition prop : propositions){
-	               boolean allSolved=true;
-	               for(Component comp : prop.getInputs()){
-	                   if(!allSolved) break;
-	                   if(!solved.contains(comp)) allSolved = false;
-	               }
-	               if(allSolved){
-	                   solved.add(prop);
-	                   order.add(prop);
+	       while(order.size() < numToSolve){
+	    	   Set<Component> nowSolved = new HashSet<Component>();
+	           for(Component comp : propNet.getComponents()){	   
+	        	   if(!solved.contains(comp)){
+	            	   boolean allSolved = true;
+	                   for(Component in : comp.getInputs()){
+	                	   if(!solved.contains(in)){
+	                		   allSolved = false;
+	                		   break;
+	                	   }
+	                   }
+	                   if(allSolved){
+	                	   nowSolved.add(comp);
+		            	   if(comp instanceof Proposition) order.add((Proposition)comp);
+	                   }
 	               }
 	           }
-	           propositions.removeAll(solved);
+	           solved.addAll(nowSolved);
 	       }
 	       return order;
 	}

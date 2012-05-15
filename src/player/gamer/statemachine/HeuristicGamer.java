@@ -74,7 +74,7 @@ public abstract class HeuristicGamer extends StateMachineGamer {
     GoalDefinitionException {
         
 		
-		
+		System.out.println(getCurrentState().toString());
 		
 		_stopTime = timeout - CALCULATION_BUFFER;
 		_numStatesExpanded = 0;
