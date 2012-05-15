@@ -58,8 +58,8 @@ public class SamplePropNetStateMachine extends StateMachine {
     
     private MachineState computeInitialState()
 	{
+    	clearPropNet();
     	propNet.getInitProposition().setValue(true);
-    	System.out.println("\ninits: "+propNet.getInitProposition().getOutputs().toString()+"\n\n");
     	return updateStateMachine();
 	}
     
@@ -117,11 +117,11 @@ public class SamplePropNetStateMachine extends StateMachine {
 	public List<Move> getLegalMoves(MachineState state, Role role)
 	throws MoveDefinitionException {
 		System.out.println(state);
+		System.out.println(propNet.getLegalInputMap());
 		Set<Proposition> legalProp = propNet.getLegalPropositions().get(role);
 		List<Move> moves = new ArrayList<Move>();
 		for(Proposition prop : legalProp){			
-			GdlSentence s = prop.getName().toSentence();
-			if(state.getContents().contains(s)){
+			if(prop.getValue()){
 				Move m = new Move(propNet.getLegalInputMap().get(prop).getName().toSentence());
 				moves.add(m);
 			}
@@ -137,7 +137,6 @@ public class SamplePropNetStateMachine extends StateMachine {
 	public MachineState getNextState(MachineState state, List<Move> moves)
 	throws TransitionDefinitionException {
 		clearPropNet();
-		System.exit(0);
 		
     	//map moves to new inputs
 		Map<GdlTerm, Proposition> termToProps = propNet.getInputPropositions();
@@ -178,7 +177,7 @@ public class SamplePropNetStateMachine extends StateMachine {
     		prop.setValue(isTrue);
     		if(isTrue) contents.add(prop.getName().toSentence());
     	}    	
-    	return new MachineState(contents);
+    	return getStateFromBase();
     }    
 	
 	/**

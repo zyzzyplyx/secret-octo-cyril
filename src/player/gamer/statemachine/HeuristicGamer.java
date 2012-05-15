@@ -54,7 +54,7 @@ public abstract class HeuristicGamer extends StateMachineGamer {
     throws TransitionDefinitionException, MoveDefinitionException,
     GoalDefinitionException {
 		/* ***************NOT DOING METAGAMING YET************************/
-		
+		System.out.println(getStateMachine().getInitialState());
 		
 		StateMachine pnet = getStateMachine();
 		//propNet.initialize(description)
@@ -72,9 +72,6 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 	public Move stateMachineSelectMove(long timeout)
     throws TransitionDefinitionException, MoveDefinitionException,
     GoalDefinitionException {
-        
-		
-		System.out.println(getCurrentState().toString());
 		
 		_stopTime = timeout - CALCULATION_BUFFER;
 		_numStatesExpanded = 0;
