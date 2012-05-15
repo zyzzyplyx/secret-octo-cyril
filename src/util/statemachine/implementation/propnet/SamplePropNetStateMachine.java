@@ -60,7 +60,7 @@ public class SamplePropNetStateMachine extends StateMachine {
 	{
     	clearPropNet();
     	propNet.getInitProposition().setValue(true);
-    	return updateStateMachine();
+    	return updateStateMachine(new MachineState(new HashSet<GdlSentence>()));
 	}
     
 	/**
@@ -116,9 +116,8 @@ public class SamplePropNetStateMachine extends StateMachine {
 	@Override
 	public List<Move> getLegalMoves(MachineState state, Role role)
 	throws MoveDefinitionException {
-		System.out.println(state);
-		System.out.println(propNet.getLegalInputMap());
 		Set<Proposition> legalProp = propNet.getLegalPropositions().get(role);
+		updateStateMachine(state);
 		List<Move> moves = new ArrayList<Move>();
 		for(Proposition prop : legalProp){			
 			if(prop.getValue()){
@@ -126,7 +125,10 @@ public class SamplePropNetStateMachine extends StateMachine {
 				moves.add(m);
 			}
 		}
-		System.out.println(moves);
+		
+		System.out.println(state.getContents().toString());
+		System.out.println(moves.toString());
+		
 		return moves;
 	}
 	
@@ -137,22 +139,20 @@ public class SamplePropNetStateMachine extends StateMachine {
 	public MachineState getNextState(MachineState state, List<Move> moves)
 	throws TransitionDefinitionException {
 		clearPropNet();
-		
     	//map moves to new inputs
 		Map<GdlTerm, Proposition> termToProps = propNet.getInputPropositions();
 		List<GdlTerm> moveTerms = toDoes(moves);
 		for (Move m : moves) {
 			termToProps.get(m.getContents().toTerm()).setValue(true);
 		}
-		//map the base state to propositions
-		Map<GdlTerm, Proposition> baseMap = propNet.getBasePropositions();	
-		for (GdlSentence s : state.getContents()) {
-			if(baseMap.containsKey(s.toTerm())){
-				baseMap.get(s.toTerm()).setValue(true);
-			}
-		}
 
-		return updateStateMachine();
+		return updateStateMachine(state);
+	}
+	
+	private void setTransitions(MachineState state){
+		for(GdlSentence s : state.getContents()){
+			
+		}
 	}
 	
 	private void clearPropNet(){
@@ -162,20 +162,26 @@ public class SamplePropNetStateMachine extends StateMachine {
 		}
 	}
     
-    private MachineState updateStateMachine() {
+    private MachineState updateStateMachine(MachineState state) {
+		//map the base state to propositions
+		Map<GdlTerm, Proposition> baseMap = propNet.getBasePropositions();
+		for (GdlSentence s : state.getContents()) {
+			baseMap.get(s.toTerm()).setValue(true);
+		}
+    	
     	//stores the contents of the state to be returned
     	Set<GdlSentence> contents = new HashSet<GdlSentence>();
     	//update the props in order
     	for(Proposition prop : ordering){
-    		boolean isTrue = true;
+    		prop.setValue(prop.getSingleInput().getValue());
+    		/*
     		for(Component input : prop.getInputs()){
 				if(!input.getValue()){//gets the value of logic gates based on preceding props
 					isTrue = false;
 					break;
 				}
     		}
-    		prop.setValue(isTrue);
-    		if(isTrue) contents.add(prop.getName().toSentence());
+    		*/
     	}    	
     	return getStateFromBase();
     }    
