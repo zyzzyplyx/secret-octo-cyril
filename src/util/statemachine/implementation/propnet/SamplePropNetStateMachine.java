@@ -37,6 +37,7 @@ public class SamplePropNetStateMachine extends StateMachine {
     private List<Role> roles;
     
     private MachineState initialState;
+    private MachineState currentState;
     /**
      * Initializes the PropNetStateMachine. You should compute the topological
      * ordering here. Additionally you may compute the initial state here, at
@@ -59,8 +60,8 @@ public class SamplePropNetStateMachine extends StateMachine {
     private MachineState computeInitialState()
 	{
     	clearPropNet();
-    	propNet.getInitProposition().setValue(true);
-    	return updateStateMachine(new MachineState(new HashSet<GdlSentence>()));
+    	propNet.getInitProposition().setValue(true);//should be the only true proposition at start
+    	return updateStateMachine(new MachineState(new HashSet<GdlSentence>()));//empty base
 	}
     
 	/**
@@ -69,8 +70,11 @@ public class SamplePropNetStateMachine extends StateMachine {
 	 */
     @Override
     public boolean isTerminal(MachineState state) {
-        clearPropNet();
-        updateStateMachine(state);
+		if(!state.equals(currentState)){
+			clearPropNet();
+			updateStateMachine(state);
+		}
+		//once the state machine is on the right state, it's easy to read get terminal
         return propNet.getTerminalProposition().getValue();
     }
 	
@@ -84,11 +88,14 @@ public class SamplePropNetStateMachine extends StateMachine {
     @Override
     public int getGoal(MachineState state, Role role)
     throws GoalDefinitionException {
-    	clearPropNet();
-    	updateStateMachine(state);
+		if(!state.equals(currentState)){
+			clearPropNet();
+			updateStateMachine(state);
+		}
     	
         Set<Proposition> goals = propNet.getGoalPropositions().get(role);
         Proposition goal = null;
+        //loop over goals and make sure only one is true in this state
         for(Proposition g : goals){
             if(g.getValue()){
                 if(goal != null) throw new GoalDefinitionException(state, role);
@@ -115,18 +122,18 @@ public class SamplePropNetStateMachine extends StateMachine {
 	@Override
 	public List<Move> getLegalMoves(MachineState state, Role role)
 	throws MoveDefinitionException {
-		clearPropNet();
-		updateStateMachine(state);
-		
+		if(!state.equals(currentState)){
+			clearPropNet();
+			updateStateMachine(state);
+		}
+		//just check propositions corresponding to all possible moves for role
+		//move is legal if the proposition is true
 		Set<Proposition> legalProp = propNet.getLegalPropositions().get(role);
 		List<Move> moves = new ArrayList<Move>();
 		for(Proposition prop : legalProp){			
 			if(prop.getValue())
 				moves.add(getMoveFromProposition(prop));
 		}
-		
-		//System.out.println(state.getContents().toString());
-		//System.out.println(moves.toString());
 		
 		return moves;
 	}
@@ -137,9 +144,9 @@ public class SamplePropNetStateMachine extends StateMachine {
 	@Override
 	public MachineState getNextState(MachineState state, List<Move> moves)
 	throws TransitionDefinitionException {
-		
 		clearPropNet();
-    	//map moves to new inputs
+		
+    	//Use the moves to define inputs for the next state
 		Map<GdlTerm, Proposition> termToProps = propNet.getInputPropositions();
 		List<GdlTerm> moveTerms = toDoes(moves);
 		for (GdlTerm m : moveTerms) {
@@ -157,24 +164,17 @@ public class SamplePropNetStateMachine extends StateMachine {
 	}
     
     private MachineState updateStateMachine(MachineState state) {
-		//map the base state to propositions
+		//map the state to base propositions
 		Map<GdlTerm, Proposition> baseMap = propNet.getBasePropositions();
 		for (GdlSentence s : state.getContents()) {
 			baseMap.get(s.toTerm()).setValue(true);
 		}
     	
     	//update the props in order
-    	for(Proposition prop : ordering){
+    	for(Proposition prop : ordering)
     		prop.setValue(prop.getSingleInput().getValue());
-    		/*
-    		for(Component input : prop.getInputs()){
-				if(!input.getValue()){//gets the value of logic gates based on preceding props
-					isTrue = false;
-					break;
-				}
-    		}
-    		*/
-    	}    	
+    	
+    	currentState = new MachineState(state.getContents());
     	return getStateFromBase();
     }    
 	
