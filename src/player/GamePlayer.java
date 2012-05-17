@@ -29,7 +29,6 @@ import util.observer.Subject;
 
 public final class GamePlayer extends Thread implements Subject
 {
-    private final int port;
     private final Gamer gamer;
     private ServerSocket listener;
     private InetAddress address;
@@ -81,7 +80,6 @@ public final class GamePlayer extends Thread implements Subject
             }				
         }
         
-        this.port = port;
         this.gamer = gamer;
         
         if (namePostfix == null) {
@@ -110,7 +108,7 @@ public final class GamePlayer extends Thread implements Subject
 	}
 	
 	public final int getGamerPort() {
-	    return port;
+	    return serverMode.getPort();
 	}
 	
 	public final Gamer getGamer() {
@@ -285,5 +283,9 @@ public final class GamePlayer extends Thread implements Subject
 				new PingRequestThread(this.listener.getInetAddress().getHostAddress(), 
 				this.listener.getLocalPort(), this.instanceName);
 		pingThread.start();
+	}
+
+	public String getGamerHost() {
+		return serverMode.getHostAddress();
 	}
 }

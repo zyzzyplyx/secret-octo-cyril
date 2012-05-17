@@ -16,6 +16,7 @@ public class PingRequestThread extends Thread {
 	private final int port;
 	private final String playerName;
 	public boolean result;
+	public boolean connectionError;
 	
 	public PingRequestThread(String host, int port, 
 			String playerName)
@@ -44,7 +45,7 @@ public class PingRequestThread extends Thread {
 			socket.close();
 			
 		} catch (IOException e) {
-			e.printStackTrace();
+			connectionError = true;
 		}
 
 	}

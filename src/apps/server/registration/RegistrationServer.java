@@ -10,8 +10,11 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 import server.threads.PingRequestThread;
 import util.http.HttpReader;
@@ -36,6 +39,8 @@ public class RegistrationServer {
 	public static String SUCCESS_RESP = "success";
 	public static String INACCESSIBLE_RESP = "inaccessible";
 	public static String LIST_CMD = "list";
+	
+	private static Random rand = new Random();
 
 	class Forward extends Thread {
 		public final Socket playerSide;
@@ -165,6 +170,9 @@ public class RegistrationServer {
 					keepAlive = true;
 					response = SUCCESS_RESP + "\n";
 				} else if (command.equals(LIST_CMD)) {
+					// Randomly verify that a player in the list is still alive
+					regServer.randomVerify();
+					
 					response = regServer.list();
 				}
 				
@@ -180,6 +188,16 @@ public class RegistrationServer {
 		}
 	}
 	
+	private void randomVerify() {
+		List<String> allKeys =new ArrayList<String>(registrations.keySet());
+		int randInt = rand.nextInt(allKeys.size());
+		String name = allKeys.get(randInt);
+		URL url = registrations.get(name);
+		if (!verifyPlayerAccessible(name, url.getHost(), url.getPort())) {
+			registrations.remove(name);
+		}
+	}
+
 	private String list() {
 		JSONObject jobject = new JSONObject(registrations);
 		return jobject.toString() + "\n";
@@ -205,14 +223,16 @@ public class RegistrationServer {
 		// Attempt to ping the player at the given URL
 		PingRequestThread pingThread = 
 				new PingRequestThread(host, playerPort, name);
-		pingThread.start();
+		try {
+			pingThread.start();
+		} catch (Exception e) { }
 		try {
 			Thread.sleep(1000);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
 		pingThread.interrupt();
-		return pingThread.result;
+		return pingThread.result && !pingThread.connectionError;
 	}
 
 	static private void displayRegistrations(Map<String,URL> registrations) {

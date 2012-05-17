@@ -44,4 +44,14 @@ public class DisjointHttpServerMode extends PlayerServerMode {
 		}
 	}
 
+	@Override
+	public String getHostAddress() {
+		return this.listener.getInetAddress().getHostAddress();
+	}
+
+	@Override
+	public int getPort() {
+		return this.listener.getLocalPort();
+	}
+
 }

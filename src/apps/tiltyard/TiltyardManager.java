@@ -55,7 +55,7 @@ public final class TiltyardManager extends Thread
                 GamePlayer player = new GamePlayer(nextPortToTry, gamer);            
                 player.start();
                 
-                hosts.add("localhost");
+                hosts.add(player.getGamerHost());
                 names.add(player.getName());
                 ports.add(new Integer(player.getGamerPort()));            
                 System.out.println("Tiltyard successfully started " + gamer.getName() + " on port " + player.getGamerPort() + ".");

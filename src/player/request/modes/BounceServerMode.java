@@ -38,4 +38,14 @@ public class BounceServerMode extends PlayerServerMode {
 		socket.close();
 	}
 
+	@Override
+	public String getHostAddress() {
+		return null;
+	}
+
+	@Override
+	public int getPort() {
+		return -1;
+	}
+
 }

@@ -1,0 +1,77 @@
+( role blue )
+( role red )
+
+( index 1 )
+( index 2 )
+( index 3 )
+( index 4 )
+( index 5 )
+( index 6 )
+( index 7 )
+( index 8 )
+( index 9 )
+
+( init ( cell 3 3 red ) )
+( init ( cell 7 7 blue ) )
+( init ( air_strikes red 3 ) )
+( init ( air_strikes blue 3 ) )
+
+( <= ( legal ?p move_down ) ( role ?p ) )
+( <= ( legal ?p move_up ) ( role ?p ) )
+( <= ( legal ?p move_left ) ( role ?p ) )
+( <= ( legal ?p move_right ) ( role ?p ) )
+( <= ( legal ?p ( strike ?x ?y ) ) ( index ?x ) ( index ?y ) ( role ?p ) ( not ( true ( air_strikes ?p 0 ) ) ) )
+
+( <= ( move ?p ) ( does ?p move_down ) )
+( <= ( move ?p ) ( does ?p move_up ) )
+( <= ( move ?p ) ( does ?p move_left ) )
+( <= ( move ?p ) ( does ?p move_right ) )
+
+( <= ( strike_done ?p ) ( index ?x ) ( index ?y ) ( role ?p ) ( does ?p ( strike ?x ?y ) ) )
+
+( <= ( next_cell ?a ?y ?p ) ( role ?p ) ( does ?p move_up ) ( true ( cell ?x ?y ?p ) ) ( succ ?a ?x ) )
+( <= ( next_cell ?a ?y ?p ) ( role ?p ) ( does ?p move_down ) ( true ( cell ?x ?y ?p ) ) ( succ ?x ?a ) )
+( <= ( next_cell ?x ?b ?p ) ( role ?p ) ( does ?p move_right ) ( true ( cell ?x ?y ?p ) ) ( succ ?y ?b ) )
+( <= ( next_cell ?x ?b ?p ) ( role ?p ) ( does ?p move_left ) ( true ( cell ?x ?y ?p ) ) ( succ ?b ?y ) )
+( <= ( next_cell ?x ?y ?p ) ( role ?p ) ( not ( move ?p ) ) ( true ( cell ?x ?y ?p ) ) )
+
+( <= ( next ( cell ?x ?y ?p ) ) ( next_cell ?x ?y ?p ) )
+
+( <= ( player_will_be ?x ?y ) ( role ?p ) ( next_cell ?x ?y ?p ) )
+
+( <= ( next ( cell ?x ?y f ) ) ( true ( cell ?x ?y f ) ) )
+( <= ( next ( cell ?x ?y f ) ) ( role ?p ) ( true ( cell ?x ?y ?p ) ) ( not ( strike_done ?p ) ) )
+( <= ( next ( cell ?x ?y f ) ) ( role ?p ) ( does ?p ( strike ?x ?y ) ) ( not ( player_will_be ?x ?y ) ) )
+
+( <= ( next ( air_strikes ?p ?c ) ) ( true ( air_strikes ?p ?o ) ) ( succ ?c ?o ) ( does ?p ( strike ?x ?y ) ) )
+( <= ( next ( air_strikes ?p ?c ) ) ( true ( air_strikes ?p ?c ) ) ( index ?x ) ( index ?y ) ( not ( strike_done ?p ) ) )
+
+( <= ( on_board ?p ) ( role ?p ) ( index ?x ) ( index ?y ) ( true ( cell ?x ?y ?p ) ) )
+( <= crash ( true ( cell ?x ?y blue ) ) ( true ( cell ?x ?y red ) ) )
+
+( <= ( error ?p ) ( role ?p ) ( true ( cell ?x ?y ?p ) ) ( true ( cell ?x ?y f ) ) )
+( <= ( error ?p ) ( role ?p ) ( not ( on_board ?p ) ) )
+( <= ( error ?p ) ( role ?p ) crash )
+
+( <= ( goal red 0 ) ( not ( error blue ) ) ( error red ) )
+( <= ( goal red 100 ) ( error blue ) ( not ( error red ) ) )
+( <= ( goal red 50 ) ( error blue ) ( error red ) )
+( <= ( goal blue 100 ) ( not ( error blue ) ) ( error red ) )
+( <= ( goal blue 0 ) ( error blue ) ( not ( error red ) ) )
+( <= ( goal blue 50 ) ( error blue ) ( error red ) )
+( <= terminal ( role ?p ) ( error ?p ) )
+
+( succ 0 1 )
+( succ 1 2 )
+( succ 2 3 )
+( succ 3 4 )
+( succ 4 5 )
+( succ 5 6 )
+( succ 6 7 )
+( succ 7 8 )
+( succ 8 9 )
+( succ 9 10 )
+( succ 10 11 )
+( succ 11 12 )
+( succ 12 13 )
+( succ 13 14 )

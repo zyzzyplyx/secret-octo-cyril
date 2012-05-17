@@ -98,20 +98,26 @@ public final class TiltyardEventsPanel extends JPanel implements Observer
         model.setValueAt(currentEvent.errorCount_IllegalMoves, model.getRowCount() - 1, 6);
         model.setValueAt(currentEvent.errorCount_ConnectionErrors, model.getRowCount() - 1, 7);
         
-        // This is a pretty simple heuristic to estimate which players
-        // won a particular match, based on the goal values. Still, it
-        // seems to work pretty well.
         if(currentEvent.latestGoals != null) {
             boolean wasTie = true;
+            int maxGoal = -1;
+            int winner = -1;
             for(int i = 0; i < currentEvent.numPlayers; i++) {
                 int nGoal = currentEvent.latestGoals.get(i);
-                if(nGoal > 75) {
-                    wasTie = false;
-                    totalWins.set(i, totalWins.get(i) + 1);
+                if(maxGoal >= 0 && maxGoal == nGoal) {
+                    wasTie = true;
+                }
+                
+                if (maxGoal < nGoal) {
+                	winner = i;
+                	maxGoal = nGoal;
+                	wasTie = false;
                 }
             }
             if(wasTie) {
                 totalTies++;
+            } else {
+            	totalWins.set(winner, totalWins.get(winner) + 1);
             }
             updateAggregates();
         }
