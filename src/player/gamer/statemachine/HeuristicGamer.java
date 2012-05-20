@@ -26,6 +26,8 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 	private static final int STATES_TO_EXPAND = 64;
 	private static final int CALCULATION_BUFFER = 1000;
     
+	private static final int MONTE_BUFFER = 100;
+	
 	protected long _stopTime;
 	private int _numStatesExpanded;
 	protected int _levelsToExpand;
@@ -77,12 +79,18 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 		_numStatesExpanded = 0;
 
 		long currTime = System.currentTimeMillis();
-		long timeAllocatedPRE = (timeout-currTime)/4; //DETERMINES THE TIME ALLOCATED FOR PRE STUFF
+		long timeAllocatedPRE = (timeout-currTime)/100; //DETERMINES THE TIME ALLOCATED FOR PRE STUFF
 		//System.out.println("Time ALlocated:" + timeAllocatedPRE);
 
 		List<Move> legalMoves = getStateMachine().getLegalMoves(getCurrentState(), getRole());
 		_levelsToExpand = 2;
-		List<Double> moveScores = getMove(getCurrentState(), currTime + timeAllocatedPRE, legalMoves);
+		//List<Double> moveScores = getMove(getCurrentState(), currTime + timeAllocatedPRE, legalMoves);
+		List<Double> moveScores = new ArrayList<Double>();
+		for(int i = 0; i<legalMoves.size();i++){
+			moveScores.add(0.0);
+		}
+		
+		
 		//System.out.println("Pre->Post");
 		_levelsToExpand = 0;
 		List<Double> moveScoresPOST = getHeuristicPOST(getCurrentState(), timeout); 
@@ -231,6 +239,10 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 	 * Level is the number of times to allow recursion, at this level
 	 * we use the heuristic value of the state.
 	 */
+	
+	private int _levelcount=0;
+
+	
 	private double maxScorePOST(MachineState state, int level, long timeout) throws GoalDefinitionException, TransitionDefinitionException, MoveDefinitionException{
 		if(getStateMachine().isTerminal(state)){ //base case 
             	//System.out.println("terminal");
@@ -244,6 +256,8 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 		if(level > _levelsToExpand || System.currentTimeMillis() > timeout){
 			//System.out.println("heuristic");
 			//return getHeuristicPOST(state, timeout); 
+			_levelcount++;
+			System.out.println("level: " +level + " count: "+_levelcount);
 			return 0;
 		}
         
@@ -260,6 +274,7 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 			double currVal = minScorePOST(move, state, level, curr_time + (i+1)*time_step);
             
 			if(System.currentTimeMillis() >= _stopTime) return 0; //TESSST TEST return getHeuristicPOST(state, timeout);
+			if(System.currentTimeMillis() >= timeout) return 0; //TESSST TEST return getHeuristicPOST(state, timeout);
 
             
 			if(currVal > maxVal) {

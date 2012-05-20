@@ -79,6 +79,7 @@ public class TheEliminator extends HeuristicGamer {
 
 	private int _count = 0;
 
+	
 	@Override
 	public List<Double> getHeuristicPOST(MachineState state, long timeout)
 			throws TransitionDefinitionException, MoveDefinitionException,
@@ -99,8 +100,11 @@ public class TheEliminator extends HeuristicGamer {
 
 		int numEliminated = 0;
 
-		_levelsToExpand = 3;
-		List<Double> quickMiniMax = getMovePOST(getCurrentState(), timeout, legalMoves);
+		_levelsToExpand = 10000;
+		List<Double> quickMiniMax = getMovePOST(getCurrentState(), timeout - (timeout-curr_time)/2, legalMoves);
+		
+		double overtime = (System.currentTimeMillis()-(timeout - (timeout-curr_time)/2));///(timeout - (timeout-curr_time)/2);
+		System.out.println("OVERTIME FRACTION"+overtime);
 		for(int i = 0; i<quickMiniMax.size(); i++){
 			System.out.println("i: " +i+ "score: " + quickMiniMax.get(i));
 			if(quickMiniMax.get(i)==101){
@@ -121,6 +125,12 @@ public class TheEliminator extends HeuristicGamer {
 				MC_List.get(i).add(quickMiniMax.get(i));
 			}
 
+		}
+		if(numEliminated == legalMoves.size()){
+			numEliminated = 0;
+			for(int i = 0; i<legalMoves.size(); i++){
+				Eliminated.set(i, false);
+			}
 		}
 
 		curr_time = System.currentTimeMillis();
