@@ -79,7 +79,7 @@ public class TheEliminator extends HeuristicGamer {
 
 	private int _count = 0;
 
-	
+
 	@Override
 	public List<Double> getHeuristicPOST(MachineState state, long timeout)
 			throws TransitionDefinitionException, MoveDefinitionException,
@@ -101,28 +101,33 @@ public class TheEliminator extends HeuristicGamer {
 		int numEliminated = 0;
 
 		_levelsToExpand = 10000;
-		List<Double> quickMiniMax = getMovePOST(getCurrentState(), timeout - (timeout-curr_time)/2, legalMoves);
-		
+		List<Score_Depth> quickMiniMax = getMovePOST(getCurrentState(), timeout - (timeout-curr_time)/2, legalMoves);
+
 		double overtime = (System.currentTimeMillis()-(timeout - (timeout-curr_time)/2));///(timeout - (timeout-curr_time)/2);
 		System.out.println("OVERTIME FRACTION"+overtime);
 		for(int i = 0; i<quickMiniMax.size(); i++){
-			System.out.println("i: " +i+ "score: " + quickMiniMax.get(i));
-			if(quickMiniMax.get(i)==101){
+			System.out.println("i: " +i+ "score: " + quickMiniMax.get(i).score);
+			if(quickMiniMax.get(i).score==101){
 				List<Double> MC_Scores = new ArrayList<Double>();
 				for(int j=0; j<numMoves; j++){
-					MC_Scores.add(0.0);
+					if(quickMiniMax.get(j).score==101){
+						MC_Scores.add(100.0-quickMiniMax.get(j).depth);   //POSSIBLE HEURISTIC
+						//MC_Scores.add(100.0 + 1.0/(double)quickMiniMax.get(j).depth);
+					} else {
+						MC_Scores.add(0.0);
+
+					}
 				}
-				MC_Scores.set(i, 100.0);
 				return MC_Scores;
 			}
-			if(quickMiniMax.get(i)==-101){
+			if(quickMiniMax.get(i).score==-101){
 				numEliminated++;
 				Eliminated.set(i, true);
 				MC_List.get(i).add(0.0);
-			} else if (quickMiniMax.get(i)!=0.0){
+			} else if (quickMiniMax.get(i).score!=0.0){
 				numEliminated++;
 				Eliminated.set(i, true);
-				MC_List.get(i).add(quickMiniMax.get(i));
+				MC_List.get(i).add(quickMiniMax.get(i).score);
 			}
 
 		}
@@ -189,14 +194,16 @@ public class TheEliminator extends HeuristicGamer {
 		List<Double> scores = new ArrayList<Double>();
 
 
-
 		while(true){
 			MachineState tempState = state;
+			int levelcount=0;
 
-
-			while(true){				
+			while(true){
+				levelcount++;
 				if(getStateMachine().isTerminal(tempState)){
 					double tempscore = getStateMachine().getGoal(tempState, getRole());
+					//tempscore+=1000.0/(double)levelcount;
+				//	tempscore-=levelcount;
 					//double tempscore =  getRelGoal(tempState);
 					scores.add(tempscore);
 					break;
