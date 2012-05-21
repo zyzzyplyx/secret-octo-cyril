@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.sun.org.apache.xpath.internal.operations.And;
+
 import util.gdl.grammar.Gdl;
 import util.gdl.grammar.GdlConstant;
 import util.gdl.grammar.GdlProposition;
@@ -15,6 +17,7 @@ import util.gdl.grammar.GdlSentence;
 import util.gdl.grammar.GdlTerm;
 import util.propnet.architecture.Component;
 import util.propnet.architecture.PropNet;
+import util.propnet.architecture.components.Or;
 import util.propnet.architecture.components.Proposition;
 import util.propnet.factory.OptimizingPropNetFactory;
 import util.statemachine.MachineState;
@@ -113,6 +116,7 @@ public class SamplePropNetStateMachine extends StateMachine {
 	 */
 	@Override
 	public MachineState getInitialState() {
+		factorDisjunctiveGoalStates();
 		return initialState;
 	}
 	
@@ -174,7 +178,7 @@ public class SamplePropNetStateMachine extends StateMachine {
     	for(Proposition prop : ordering)
     		prop.setValue(prop.getSingleInput().getValue());
     	
-    	currentState = new MachineState(state.getContents());
+    	currentState = state;
     	return getStateFromBase();
     }    
 	
@@ -302,5 +306,20 @@ public class SamplePropNetStateMachine extends StateMachine {
 
 		}
 		return new MachineState(contents);
+	}
+	
+	public void factorDisjunctiveGoalStates() {
+		Or orGate = new Or();
+		Map<Role, Set<Proposition>> goalMap = propNet.getGoalPropositions();
+		for (Role role : roles) {
+			Set<Proposition> goalProps = goalMap.get(role);
+			for (Proposition goalProp : goalProps) {
+				if (goalProp.getSingleInput().getClass().equals(orGate.getClass())) {
+					System.out.println("Here's a potential disjunction");
+				} else {
+					System.out.println("regular goal");
+				}
+			}
+		}
 	}
 }
