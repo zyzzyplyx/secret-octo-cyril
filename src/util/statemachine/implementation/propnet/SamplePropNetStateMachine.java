@@ -44,6 +44,7 @@ public class SamplePropNetStateMachine extends StateMachine {
     /**The factors of this game, with their goal states as keys*/
     Map<Component, Set<Component>> factors;
     Component selectedGoal;
+    Set<Proposition> selectedLegals;
     
     private MachineState initialState;
     private MachineState currentState;
@@ -141,15 +142,10 @@ public class SamplePropNetStateMachine extends StateMachine {
 		List<Move> moves = new ArrayList<Move>();
 		for(Proposition prop : legalProp){			
 			if(prop.getValue()){
-				//if(selectedGoal == null)
+				if(selectedGoal == null)
 					moves.add(getMoveFromProposition(prop));
-				/*
-				else{
-					Move temp = getMoveFromProposition(prop);
-					if(factors.get(selectedGoal).contains(toDoes(Arrays.asList(temp)).get(0)))
-						moves.add(temp);
-				}
-				*/
+				else if(selectedLegals.contains(prop))
+					moves.add(getMoveFromProposition(prop));
 			}
 		}
 		
@@ -397,6 +393,12 @@ public class SamplePropNetStateMachine extends StateMachine {
 			if(smallest == -1 || factors.get(key).size()<smallest){
 				smallest = factors.get(key).size();
 				selectedGoal = key;
+			}
+		}
+		selectedLegals = new HashSet<Proposition>();
+		for(Component comp : factors.get(selectedGoal)){
+			if(propNet.getLegalInputMap().containsKey(comp)){
+				selectedLegals.add(propNet.getLegalInputMap().get(comp));
 			}
 		}
 		//System.out.println(propNet.getLegalInputMap().keySet());
