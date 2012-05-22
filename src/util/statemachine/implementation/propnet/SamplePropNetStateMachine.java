@@ -1,6 +1,7 @@
 package util.statemachine.implementation.propnet;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -40,6 +41,9 @@ public class SamplePropNetStateMachine extends StateMachine {
     private List<Proposition> ordering;
     /** The player roles */
     private List<Role> roles;
+    /**The factors of this game, with their goal states as keys*/
+    Map<Component, Set<Component>> factors;
+    Component selectedGoal;
     
     private MachineState initialState;
     private MachineState currentState;
@@ -136,8 +140,17 @@ public class SamplePropNetStateMachine extends StateMachine {
 		Set<Proposition> legalProp = propNet.getLegalPropositions().get(role);
 		List<Move> moves = new ArrayList<Move>();
 		for(Proposition prop : legalProp){			
-			if(prop.getValue())
-				moves.add(getMoveFromProposition(prop));
+			if(prop.getValue()){
+				//if(selectedGoal == null)
+					moves.add(getMoveFromProposition(prop));
+				/*
+				else{
+					Move temp = getMoveFromProposition(prop);
+					if(factors.get(selectedGoal).contains(toDoes(Arrays.asList(temp)).get(0)))
+						moves.add(temp);
+				}
+				*/
+			}
 		}
 		
 		return moves;
@@ -311,6 +324,7 @@ public class SamplePropNetStateMachine extends StateMachine {
 	 * returns the number of factored games 
 	 */
 	public int factorDisjunctiveGoalStates(Role role) {
+		selectedGoal = null;
 		Set<Proposition> goalProps = propNet.getGoalPropositions().get(role);
 		Proposition bestGoal = null;
 		int bestVal = 0;
@@ -329,8 +343,11 @@ public class SamplePropNetStateMachine extends StateMachine {
 				System.out.println("regular goal"+goalProp.toString());
 			}
 		}
+		
 		//there are up to n factors, where n is the number of inputs to the goal prop
-		Map<Component, Set<Component>> factors = new HashMap<Component, Set<Component>>();
+		factors = new HashMap<Component, Set<Component>>();
+		if(bestGoal == null) return 0;
+		
 		//make a set of all propositions affecting each input
 		for(Component factorGoal : bestGoal.getSingleInput().getInputs()){
 			Set<Component> f = new HashSet<Component>();
@@ -364,20 +381,27 @@ public class SamplePropNetStateMachine extends StateMachine {
 			factors.put(factorGoal, f);
 		}
 		//check for overlap of the generated sets
-		Collection<Set<Component>> sets = factors.values();
-		for(Set<Component> one : sets){
-			for(Set<Component> two : sets){
-				Set<Component> copy = new HashSet<Component>(one);
-				copy.retainAll(two);
+		List<Set<Component>> sets = new ArrayList<Set<Component>>(factors.values());
+		for(int i = 0; i < sets.size(); i++){
+			for(int j = i+1; j < sets.size(); j++){
+				Set<Component> copy = new HashSet<Component>(sets.get(i));
+				copy.retainAll(sets.get(j));
 				if(copy.size() > 0){
-					factors.remove(one);
-					one.clear();
+					factors.remove(sets.get(i));
 					break;
 				}
 			}
 		}
-		System.out.println(factors.size());
-		return factors.size();
-		
+		int smallest = -1;
+		for(Component key: factors.keySet()){
+			if(smallest == -1 || factors.get(key).size()<smallest){
+				smallest = factors.get(key).size();
+				selectedGoal = key;
+			}
+		}
+		//System.out.println(propNet.getLegalInputMap().keySet());
+		//System.out.println(propNet.getLegalInputMap().);
+		//System.out.println(factors.get(selectedGoal));
+		return factors.size();		
 	}
 }
