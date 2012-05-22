@@ -1,5 +1,8 @@
 package util.statemachine.implementation.propnet;
 
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -378,30 +381,53 @@ public class SamplePropNetStateMachine extends StateMachine {
 			factors.put(factorGoal, f);
 		}
 		//check for overlap of the generated sets
-		List<Set<Component>> sets = new ArrayList<Set<Component>>(factors.values());
-		for(int i = 0; i < sets.size(); i++){
-			for(int j = i+1; j < sets.size(); j++){
-				Set<Component> copy = new HashSet<Component>(sets.get(i));
-				copy.retainAll(sets.get(j));
+		List<Component> keys = new ArrayList<Component>(factors.keySet());
+		System.out.println(factors.size());
+		Map<Component, Set<Component>> oldFactors = new HashMap<Component, Set<Component>>(factors);
+		factors.clear();
+		for(int i = 0; i < keys.size(); i++){
+			boolean noMatch = true;
+			for(int j = i+1; j < keys.size(); j++){
+				Set<Component> copy = new HashSet<Component>(oldFactors.get(keys.get(i)));
+				copy.retainAll(oldFactors.get(keys.get(j)));
+				System.out.println("comparison made");
 				if(copy.size() > 0){
-					factors.remove(sets.get(i));
+					System.out.println("removed an overlapping factor");
+					noMatch = false;
 					break;
 				}
 			}
+			if(noMatch) factors.put(keys.get(i), oldFactors.get(keys.get(i)));			
 		}
-		int smallest = -1;
-		for(Component key: factors.keySet()){
-			if(smallest == -1 || factors.get(key).size()<smallest){
-				smallest = factors.get(key).size();
-				selectedGoal = key;
+		System.out.println(factors.size());
+		if(factors.size() > 1){
+			int smallest = -1;
+			for(Component key: factors.keySet()){
+				if(smallest == -1 || factors.get(key).size()<smallest){
+					smallest = factors.get(key).size();
+					selectedGoal = key;
+				}
+			}
+			selectedLegals = new HashSet<Proposition>();
+			for(Component comp : factors.get(selectedGoal)){
+				if(propNet.getLegalInputMap().containsKey(comp)){
+					selectedLegals.add(propNet.getLegalInputMap().get(comp));
+				}
 			}
 		}
-		selectedLegals = new HashSet<Proposition>();
-		for(Component comp : factors.get(selectedGoal)){
-			if(propNet.getLegalInputMap().containsKey(comp)){
-				selectedLegals.add(propNet.getLegalInputMap().get(comp));
+		
+		PrintWriter out;
+		try {
+			out = new PrintWriter(new FileWriter("out.txt"));
+			out.println(factors.size()); 
+			for(Set<Component> factor : factors.values()){
+				out.println(factor);
 			}
-		}
+			out.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} 
 		//System.out.println(propNet.getLegalInputMap().keySet());
 		//System.out.println(propNet.getLegalInputMap().);
 		//System.out.println(factors.get(selectedGoal));
