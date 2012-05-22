@@ -65,18 +65,8 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 			throws TransitionDefinitionException, MoveDefinitionException,
 			GoalDefinitionException {
 		/* ***************NOT DOING METAGAMING YET************************/
+		((SamplePropNetStateMachine) getStateMachine()).factorDisjunctiveGoalStates(getRole());
 		System.out.println(getStateMachine().getInitialState());
-
-		StateMachine pnet = getStateMachine();
-		//propNet.initialize(description)
-		int a = 4;
-		int b = a+1;
-
-		for(int i = 0; i<a; i++){
-			b+=b;
-		}
-
-
 	}
 
 	@Override

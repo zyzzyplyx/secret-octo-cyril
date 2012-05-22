@@ -1,6 +1,8 @@
 package util.statemachine.implementation.propnet;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -116,7 +118,6 @@ public class SamplePropNetStateMachine extends StateMachine {
 	 */
 	@Override
 	public MachineState getInitialState() {
-		factorDisjunctiveGoalStates();
 		return initialState;
 	}
 	
@@ -300,26 +301,83 @@ public class SamplePropNetStateMachine extends StateMachine {
 		{
 			p.setValue(p.getSingleInput().getValue());
 			if (p.getValue())
-			{
 				contents.add(p.getName().toSentence());
-			}
-
 		}
 		return new MachineState(contents);
 	}
 	
-	public void factorDisjunctiveGoalStates() {
-		Or orGate = new Or();
-		Map<Role, Set<Proposition>> goalMap = propNet.getGoalPropositions();
-		for (Role role : roles) {
-			Set<Proposition> goalProps = goalMap.get(role);
-			for (Proposition goalProp : goalProps) {
-				if (goalProp.getSingleInput().getClass().equals(orGate.getClass())) {
-					System.out.println("Here's a potential disjunction");
-				} else {
-					System.out.println("regular goal");
+	/*
+	 * Checks to see if this game is disjunctively factorable.
+	 * returns the number of factored games 
+	 */
+	public int factorDisjunctiveGoalStates(Role role) {
+		Set<Proposition> goalProps = propNet.getGoalPropositions().get(role);
+		Proposition bestGoal = null;
+		int bestVal = 0;
+		//any goal proposition with an or gate could lead to disjunction
+		//only focus on the goal which gets us the best reward
+		for (Proposition goalProp : goalProps){
+			if (goalProp.getSingleInput() instanceof Or) {
+				System.out.println("Here's a potential disjunction"+goalProp.toString());
+				System.out.println(goalProp.getSingleInput().getInputs().size());
+				//goalProp.getSingleInput().getInputs().size();
+				if(bestVal < getGoalValue(goalProp)){
+					bestGoal = goalProp;
+					bestVal = getGoalValue(goalProp);
+				}
+			} else {
+				System.out.println("regular goal"+goalProp.toString());
+			}
+		}
+		//there are up to n factors, where n is the number of inputs to the goal prop
+		Map<Component, Set<Component>> factors = new HashMap<Component, Set<Component>>();
+		//make a set of all propositions affecting each input
+		for(Component factorGoal : bestGoal.getSingleInput().getInputs()){
+			Set<Component> f = new HashSet<Component>();
+			Set<Component> fringe = new HashSet<Component>();
+			f.add(factorGoal);
+			fringe.add(factorGoal);
+			//iterate until all connected factors are in the set
+			//VERY INEFFICIENT!!!
+			while(true){
+				Set<Component> newFringe = new HashSet<Component>();
+				for(Component comp : fringe){
+					for(Component in : comp.getInputs()){
+						//we must cut out the init proposition
+						if(!in.equals(propNet.getInitProposition()) && !f.contains(in)){
+							f.add(in);
+							newFringe.add(in);
+						}
+					}
+					for(Component out : comp.getOutputs()){
+						//adding the goal will have all kinds of negative implications
+						if(!out.equals(factorGoal) && !f.contains(out)){
+							f.add(out);
+							newFringe.add(out);
+						}
+					}
+				}
+				fringe = newFringe;
+				//if we didn't add anything this round, we're done
+				if(fringe.size() == 0) break;
+			}	
+			factors.put(factorGoal, f);
+		}
+		//check for overlap of the generated sets
+		Collection<Set<Component>> sets = factors.values();
+		for(Set<Component> one : sets){
+			for(Set<Component> two : sets){
+				Set<Component> copy = new HashSet<Component>(one);
+				copy.retainAll(two);
+				if(copy.size() > 0){
+					factors.remove(one);
+					one.clear();
+					break;
 				}
 			}
 		}
+		System.out.println(factors.size());
+		return factors.size();
+		
 	}
 }
