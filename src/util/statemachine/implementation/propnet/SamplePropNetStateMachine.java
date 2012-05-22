@@ -63,6 +63,7 @@ public class SamplePropNetStateMachine extends StateMachine {
         roles = propNet.getRoles();
         ordering = getOrdering();
         initialState = computeInitialState();
+        propNet.renderToFile("graph.dot");
         System.out.println("order: "+ordering.toString());
         System.out.println("initState: "+initialState.toString());
     }    
