@@ -130,14 +130,6 @@ public class SamplePropNetStateMachine extends StateMachine {
 		return initialState;
 	}
 	
-	
-	public List<Component> getFactorKeys(){
-		return null;
-	}
-	public List<Move> getFactorLegalMoves(MachineState state, Role role, Component factorKey){
-		return null;
-	}
-	
 	/**
 	 * Computes the legal moves for role in state.
 	 */
@@ -380,9 +372,7 @@ public class SamplePropNetStateMachine extends StateMachine {
 				for(Component comp : fringe){
 					for(Component in : comp.getInputs()){
 						//we must cut out the init proposition
-						if(!in.equals(propNet.getInitProposition()) && 
-								!(in instanceof util.propnet.architecture.components.Constant) && 
-								!f.contains(in)){
+						if(!in.equals(propNet.getInitProposition()) && !f.contains(in)){
 							f.add(in);
 							newFringe.add(in);
 						}
