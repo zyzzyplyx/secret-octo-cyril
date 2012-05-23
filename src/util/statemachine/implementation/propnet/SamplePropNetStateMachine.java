@@ -214,6 +214,7 @@ public class SamplePropNetStateMachine extends StateMachine {
 	{
 		  // List to contain the topological ordering.
 	       List<Proposition> order = new LinkedList<Proposition>();
+	       List<Proposition> orderFinal = new LinkedList<Proposition>();
 
 	       // All of the components in the PropNet
 	       Set<Component> components = new HashSet<Component>(propNet.getComponents());
@@ -244,7 +245,17 @@ public class SamplePropNetStateMachine extends StateMachine {
 	           }
 	           solved.addAll(nowSolved);
 	       }
-	       return order;
+	       
+	       for (Proposition proposition : order) {
+				if (proposition.getSingleInput().toString().contains("TRUE")) {
+					proposition.setValue(true);
+					propNet.getPropositions().remove(proposition);
+				} else {
+					orderFinal.add(proposition);
+				}
+			}
+	       
+	       return orderFinal;
 	}
 	
 	/* Already implemented for you */
