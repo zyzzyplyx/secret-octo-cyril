@@ -1,0 +1,5 @@
+{
+  "name": "Tic Tac Heaven",
+  "rulesheet": "ticTacHeaven.kif",
+  "stylesheet": "ticTacHeaven.xsl"
+}
