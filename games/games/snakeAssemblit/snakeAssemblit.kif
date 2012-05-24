@@ -57,6 +57,7 @@
 ( <= ( has_move_assem_left ?p ?v ) ( true ( at ?p ?i ?j ) ) ( col ?v ) ( succ ?v ?j ) )
 
 ( <= ( has_shift_up ?p ?j ) ( true ( at ?p ?i ?j ) ) ( true ( control_assem ?p ) ) )
+( <= ( has_shift_right ?p ?i ) ( true ( at ?p ?i ?j ) ) ( true ( control_assem ?p ) ) )
 
 ( <= ( legal ?p move_assem_up ) ( row ?u ) ( has_move_assem_up ?p ?u ) )
 ( <= ( legal ?p move_assem_down ) ( row ?u ) ( has_move_assem_down ?p ?u ) )
