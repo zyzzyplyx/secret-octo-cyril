@@ -10,8 +10,8 @@
     </style>        
   <!-- Draw Board -->    
   <xsl:call-template   name="board">      
-    <xsl:with-param name="cols" select="9"/>   
-    <xsl:with-param name="rows" select="9"/>   
+    <xsl:with-param name="cols" select="6"/>   
+    <xsl:with-param name="rows" select="6"/>   
   </xsl:call-template>     
 
   <xsl:call-template   name="board_assem">      
