@@ -130,6 +130,14 @@ public class SamplePropNetStateMachine extends StateMachine {
 		return initialState;
 	}
 	
+	
+	public List<Component> getFactorKeys(){
+		return null;
+	}
+	public List<Move> getFactorLegalMoves(MachineState state, Role role, Component factorKey){
+		return null;
+	}
+	
 	/**
 	 * Computes the legal moves for role in state.
 	 */
@@ -330,11 +338,27 @@ public class SamplePropNetStateMachine extends StateMachine {
 		return new MachineState(contents);
 	}
 	
+	boolean shouldIgnore(Component comp){
+		boolean fixed = true;
+		for(Component in : comp.getInputs()){
+			if(!(in instanceof util.propnet.architecture.components.Constant)){
+				fixed = false;
+			}
+		}
+		return (comp instanceof util.propnet.architecture.components.Constant) ||
+				(comp.equals(propNet.getInitProposition()))||
+				(comp.equals(propNet.getTerminalProposition()))||
+				propNet.getGoalPropositions().containsValue(comp)||
+				
+	}
+	
 	/*
 	 * Checks to see if this game is disjunctively factorable.
 	 * returns the number of factored games 
 	 */
 	public int factorDisjunctiveGoalStates(Role role) {
+		PrintWriter fout;
+		
 		selectedGoal = null;
 		Set<Proposition> goalProps = propNet.getGoalPropositions().get(role);
 		Proposition bestGoal = null;
@@ -365,25 +389,21 @@ public class SamplePropNetStateMachine extends StateMachine {
 			Set<Component> fringe = new HashSet<Component>();
 			f.add(factorGoal);
 			fringe.add(factorGoal);
+			System.out.println(factorGoal);
 			//iterate until all connected factors are in the set
 			//VERY INEFFICIENT!!!
 			while(true){
 				Set<Component> newFringe = new HashSet<Component>();
 				for(Component comp : fringe){
-					for(Component in : comp.getInputs()){
-						//we must cut out the init proposition
-						if(!in.equals(propNet.getInitProposition()) && !f.contains(in)){
-							f.add(in);
-							newFringe.add(in);
+					if(!(comp instanceof util.propnet.architecture.components.Constant) &&
+							(f.size() == 1 || !comp.equals(factorGoal))){
+						f.add(comp);
+						for(Component in : comp.getInputs()){
+							//we must cut out the init proposition
+							if(!in.equals(propNet.getInitProposition()) && !f.contains(in))
+								newFringe.add(in);
 						}
-					}
-					for(Component out : comp.getOutputs()){
-						//adding the goal will have all kinds of negative implications
-						if(!out.equals(factorGoal) && !f.contains(out)){
-							f.add(out);
-							newFringe.add(out);
-						}
-					}
+					}	
 				}
 				fringe = newFringe;
 				//if we didn't add anything this round, we're done
@@ -391,6 +411,15 @@ public class SamplePropNetStateMachine extends StateMachine {
 			}	
 			factors.put(factorGoal, f);
 		}
+		
+		//print to file for debugging
+		try {
+			fout = new PrintWriter(new FileWriter("out.txt"));
+			fout.println(factors.size()); 
+			for(Set<Component> factor : factors.values()){
+				fout.println(factor);
+			}
+		
 		//check for overlap of the generated sets
 		List<Component> keys = new ArrayList<Component>(factors.keySet());
 		System.out.println(factors.size());
@@ -403,6 +432,8 @@ public class SamplePropNetStateMachine extends StateMachine {
 				copy.retainAll(oldFactors.get(keys.get(j)));
 				System.out.println("comparison made");
 				if(copy.size() > 0){
+					fout.print("OVERLAP: ");
+					fout.println(copy);
 					System.out.println("removed an overlapping factor");
 					noMatch = false;
 					break;
@@ -410,6 +441,8 @@ public class SamplePropNetStateMachine extends StateMachine {
 			}
 			if(noMatch) factors.put(keys.get(i), oldFactors.get(keys.get(i)));			
 		}
+		
+		//select the simplest game, play that one
 		System.out.println(factors.size());
 		if(factors.size() > 1){
 			int smallest = -1;
@@ -425,23 +458,16 @@ public class SamplePropNetStateMachine extends StateMachine {
 					selectedLegals.add(propNet.getLegalInputMap().get(comp));
 				}
 			}
-		}
-		
-		PrintWriter out;
-		try {
-			out = new PrintWriter(new FileWriter("out.txt"));
-			out.println(factors.size()); 
-			for(Set<Component> factor : factors.values()){
-				out.println(factor);
-			}
-			out.close();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		} 
 		//System.out.println(propNet.getLegalInputMap().keySet());
 		//System.out.println(propNet.getLegalInputMap().);
 		//System.out.println(factors.get(selectedGoal));
+			
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 		return factors.size();		
 	}
 }
