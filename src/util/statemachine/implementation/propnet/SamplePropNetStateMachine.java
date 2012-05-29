@@ -46,7 +46,8 @@ public class SamplePropNetStateMachine extends StateMachine {
     private List<Role> roles;
     /**The factors of this game, with their goal states as keys*/
     Map<Component, Set<Component>> factors;
-    Component selectedGoal;
+    Map<Component, Set<Proposition>> factorLegalsMap;
+    LinkedList<Component> goalOrdering;
     Set<Proposition> selectedLegals;
     
     private MachineState initialState;
@@ -131,36 +132,62 @@ public class SamplePropNetStateMachine extends StateMachine {
 	}
 	
 	
-	public List<Component> getFactorKeys(){
-		return null;
-	}
-	public List<Move> getFactorLegalMoves(MachineState state, Role role, Component factorKey){
-		return null;
+	public Map<Component, Set<Component>> getFactorMap(){
+		return factors;
 	}
 	
-	/**
-	 * Computes the legal moves for role in state.
-	 */
-	@Override
-	public List<Move> getLegalMoves(MachineState state, Role role)
-	throws MoveDefinitionException {
+	public List<Move> getFactorLegalMoves(MachineState state, Role role, Component factorKey){
 		if(!state.equals(currentState)){
 			clearPropNet();
 			updateStateMachine(state);
 		}
+		Set<Proposition> factorLegals = factorLegalsMap.get(factorKey);
 		//just check propositions corresponding to all possible moves for role
 		//move is legal if the proposition is true
 		Set<Proposition> legalProp = propNet.getLegalPropositions().get(role);
 		List<Move> moves = new ArrayList<Move>();
-		for(Proposition prop : legalProp){			
-			if(prop.getValue()){
-				if(selectedGoal == null)
-					moves.add(getMoveFromProposition(prop));
-				else if(selectedLegals.contains(prop))
-					moves.add(getMoveFromProposition(prop));
+		for(Proposition prop : legalProp){	
+			if(prop.getValue()&&factorLegals.contains(prop))
+				moves.add(getMoveFromProposition(prop));
+		}
+		/*
+		if(moves.size() == 0){
+			for(Proposition prop : legalProp){
+				System.out.println("prop: "+prop.toString());
+				System.out.println("val: "+prop.getValue());
+				System.out.println("contained: "+selectedLegals.contains(prop));
 			}
 		}
-		
+		*/
+		return moves;
+	}
+	
+	/**
+	 * Computes the legal moves for role in state, returning a set which only affects a single
+	 * factor.  It prefers to return moves affecting the primary goal game, but if there are no 
+	 * moves in that game it chooses another.
+	 */
+	@Override
+	public List<Move> getLegalMoves(MachineState state, Role role)
+	throws MoveDefinitionException {
+		List<Move> moves = new ArrayList<Move>();
+		if(goalOrdering == null){
+			if(!state.equals(currentState)){
+				clearPropNet();
+				updateStateMachine(state);
+			}
+			Set<Proposition> legalProp = propNet.getLegalPropositions().get(role);
+			for(Proposition prop : legalProp){	
+				if(prop.getValue())	moves.add(getMoveFromProposition(prop));
+			}
+			return moves;
+		}
+		else{
+			for(Component factorKey : goalOrdering){
+				moves = getFactorLegalMoves(state, role, factorKey);
+				if(moves.size() > 0) return moves;
+			}
+		}
 		return moves;
 	}
 	
@@ -338,12 +365,28 @@ public class SamplePropNetStateMachine extends StateMachine {
 		return new MachineState(contents);
 	}
 	
+	boolean shouldIgnore(Component comp){
+		boolean fixed = true;
+		for(Component in : comp.getInputs()){
+			if(!(in instanceof util.propnet.architecture.components.Constant)){
+				fixed = false;
+			}
+		}
+		return fixed||(comp instanceof util.propnet.architecture.components.Constant) ||
+				(comp.equals(propNet.getInitProposition()))||
+				(comp.equals(propNet.getTerminalProposition()))||
+				propNet.getGoalPropositions().containsValue(comp);
+				
+	}
+	
 	/*
 	 * Checks to see if this game is disjunctively factorable.
 	 * returns the number of factored games 
 	 */
 	public int factorDisjunctiveGoalStates(Role role) {
-		selectedGoal = null;
+		PrintWriter fout;
+		
+		goalOrdering = null;
 		Set<Proposition> goalProps = propNet.getGoalPropositions().get(role);
 		Proposition bestGoal = null;
 		int bestVal = 0;
@@ -373,27 +416,21 @@ public class SamplePropNetStateMachine extends StateMachine {
 			Set<Component> fringe = new HashSet<Component>();
 			f.add(factorGoal);
 			fringe.add(factorGoal);
+			System.out.println(factorGoal);
 			//iterate until all connected factors are in the set
 			//VERY INEFFICIENT!!!
 			while(true){
 				Set<Component> newFringe = new HashSet<Component>();
 				for(Component comp : fringe){
-					for(Component in : comp.getInputs()){
-						//we must cut out the init proposition
-						if(!in.equals(propNet.getInitProposition()) && 
-								!(in instanceof util.propnet.architecture.components.Constant) && 
-								!f.contains(in)){
-							f.add(in);
-							newFringe.add(in);
+					if(!(comp instanceof util.propnet.architecture.components.Constant) &&
+							(f.size() == 1 || !comp.equals(factorGoal))){
+						f.add(comp);
+						for(Component in : comp.getInputs()){
+							//we must cut out the init proposition
+							if(!in.equals(propNet.getInitProposition()) && !f.contains(in))
+								newFringe.add(in);
 						}
-					}
-					for(Component out : comp.getOutputs()){
-						//adding the goal will have all kinds of negative implications
-						if(!out.equals(factorGoal) && !f.contains(out)){
-							f.add(out);
-							newFringe.add(out);
-						}
-					}
+					}	
 				}
 				fringe = newFringe;
 				//if we didn't add anything this round, we're done
@@ -401,6 +438,12 @@ public class SamplePropNetStateMachine extends StateMachine {
 			}	
 			factors.put(factorGoal, f);
 		}
+		
+		//print to file for debugging
+		try {
+			fout = new PrintWriter(new FileWriter("out.txt"));
+			fout.println(factors.size());
+		
 		//check for overlap of the generated sets
 		List<Component> keys = new ArrayList<Component>(factors.keySet());
 		System.out.println(factors.size());
@@ -413,6 +456,8 @@ public class SamplePropNetStateMachine extends StateMachine {
 				copy.retainAll(oldFactors.get(keys.get(j)));
 				System.out.println("comparison made");
 				if(copy.size() > 0){
+					fout.print("OVERLAP: ");
+					fout.println(copy);
 					System.out.println("removed an overlapping factor");
 					noMatch = false;
 					break;
@@ -420,38 +465,47 @@ public class SamplePropNetStateMachine extends StateMachine {
 			}
 			if(noMatch) factors.put(keys.get(i), oldFactors.get(keys.get(i)));			
 		}
+		
+		//select the simplest game, but prepare data for all of them
 		System.out.println(factors.size());
 		if(factors.size() > 1){
-			int smallest = -1;
+			goalOrdering = new LinkedList<Component>();
+			factorLegalsMap = new HashMap<Component, Set<Proposition>>();
 			for(Component key: factors.keySet()){
-				if(smallest == -1 || factors.get(key).size()<smallest){
-					smallest = factors.get(key).size();
-					selectedGoal = key;
+				//put the goals in order of complexity
+				if(goalOrdering.size() == 0){
+					goalOrdering.addFirst(key);
 				}
-			}
-			selectedLegals = new HashSet<Proposition>();
-			for(Component comp : factors.get(selectedGoal)){
-				if(propNet.getLegalInputMap().containsKey(comp)){
-					selectedLegals.add(propNet.getLegalInputMap().get(comp));
+				else{
+					for(int i = 0; i < goalOrdering.size(); i++){
+						if(factors.get(key).size() < factors.get(goalOrdering.get(i)).size()){
+							goalOrdering.add(i, key);
+						}
+					}
+					if(!goalOrdering.contains(key)) goalOrdering.addLast(key);
+				}					
+				
+				Set<Proposition> factorLegals = new HashSet<Proposition>();
+				for(Component comp : factors.get(key)){
+					if(propNet.getLegalInputMap().containsKey(comp)){
+						factorLegals.add(propNet.getLegalInputMap().get(comp));
+					}
 				}
+				factorLegalsMap.put(key, factorLegals);
 			}
+			fout.println("goalOrdering: "+goalOrdering.toString());
+			selectedLegals = factorLegalsMap.get(goalOrdering.get(0));
+	
+			fout.print("legals: ");
+			fout.println(selectedLegals);
 		}
 		
-		PrintWriter out;
-		try {
-			out = new PrintWriter(new FileWriter("out.txt"));
-			out.println(factors.size()); 
-			for(Set<Component> factor : factors.values()){
-				out.println(factor);
-			}
-			out.close();
+		fout.close();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		} 
-		//System.out.println(propNet.getLegalInputMap().keySet());
-		//System.out.println(propNet.getLegalInputMap().);
-		//System.out.println(factors.get(selectedGoal));
+		}
+		
 		return factors.size();		
 	}
 }
