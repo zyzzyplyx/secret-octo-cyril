@@ -171,11 +171,24 @@ public class SamplePropNetStateMachine extends StateMachine {
 	public List<Move> getLegalMoves(MachineState state, Role role)
 	throws MoveDefinitionException {
 		List<Move> moves = new ArrayList<Move>();
-		for(Component factorKey : goalOrdering){
-			moves = getFactorLegalMoves(state, role, factorKey);
-			if(moves.size() > 0) return moves;
+		if(goalOrdering == null){
+			if(!state.equals(currentState)){
+				clearPropNet();
+				updateStateMachine(state);
+			}
+			Set<Proposition> legalProp = propNet.getLegalPropositions().get(role);
+			for(Proposition prop : legalProp){	
+				if(prop.getValue())	moves.add(getMoveFromProposition(prop));
+			}
+			return moves;
 		}
-		return null;
+		else{
+			for(Component factorKey : goalOrdering){
+				moves = getFactorLegalMoves(state, role, factorKey);
+				if(moves.size() > 0) return moves;
+			}
+		}
+		return moves;
 	}
 	
 	/**
@@ -455,11 +468,11 @@ public class SamplePropNetStateMachine extends StateMachine {
 		
 		//select the simplest game, but prepare data for all of them
 		System.out.println(factors.size());
-		goalOrdering = new LinkedList<Component>();
-		factorLegalsMap = new HashMap<Component, Set<Proposition>>();
 		if(factors.size() > 1){
-			int smallest = -1;
+			goalOrdering = new LinkedList<Component>();
+			factorLegalsMap = new HashMap<Component, Set<Proposition>>();
 			for(Component key: factors.keySet()){
+				//put the goals in order of complexity
 				if(goalOrdering.size() == 0){
 					goalOrdering.addFirst(key);
 				}
@@ -482,7 +495,7 @@ public class SamplePropNetStateMachine extends StateMachine {
 			}
 			fout.println("goalOrdering: "+goalOrdering.toString());
 			selectedLegals = factorLegalsMap.get(goalOrdering.get(0));
-
+	
 			fout.print("legals: ");
 			fout.println(selectedLegals);
 		}
