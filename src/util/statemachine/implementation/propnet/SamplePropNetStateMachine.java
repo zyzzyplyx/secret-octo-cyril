@@ -345,10 +345,10 @@ public class SamplePropNetStateMachine extends StateMachine {
 				fixed = false;
 			}
 		}
-		return (comp instanceof util.propnet.architecture.components.Constant) ||
+		return fixed||(comp instanceof util.propnet.architecture.components.Constant) ||
 				(comp.equals(propNet.getInitProposition()))||
 				(comp.equals(propNet.getTerminalProposition()))||
-				propNet.getGoalPropositions().containsValue(comp)||
+				propNet.getGoalPropositions().containsValue(comp);
 				
 	}
 	
