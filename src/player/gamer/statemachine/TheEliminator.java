@@ -92,6 +92,11 @@ public class TheEliminator extends HeuristicGamer {
 			MC_List.add(new ArrayList<Double>());
 			Eliminated.add(false);
 		}
+		if(legalMoves.size()==1){
+			List<Double> MC_Scores = new ArrayList<Double>();
+			MC_Scores.add(50.0);
+			return MC_Scores;
+		}
 		int count = 0;
 		int numMoves = legalMoves.size();
 
@@ -132,10 +137,47 @@ public class TheEliminator extends HeuristicGamer {
 
 		}
 		if(numEliminated == legalMoves.size()){
+			double best_depth = 10000;
+			double best_score =  -1;
+			int best_index = 0;
+			int num_equal = 0;
+			for(int i = 0; i<legalMoves.size(); i++){
+				if(quickMiniMax.get(i).score>best_score){
+					best_score = quickMiniMax.get(i).score;
+					best_depth = quickMiniMax.get(i).depth;
+					best_index = i;
+					num_equal = 1;
+				}
+				if(quickMiniMax.get(i).score==best_score){
+					if(quickMiniMax.get(i).depth < best_depth){
+						best_depth = quickMiniMax.get(i).depth;
+						best_index = i;
+						num_equal++;
+
+					}
+				}
+
+			}
+
+			List<Double> MC_Scores = new ArrayList<Double>();
+			for(int j=0; j<numMoves; j++){
+				if(best_index == j){
+					MC_Scores.add(100.0-quickMiniMax.get(j).depth);   //POSSIBLE HEURISTIC
+					//MC_Scores.add(100.0 + 1.0/(double)quickMiniMax.get(j).depth);
+				} else {
+					MC_Scores.add(0.0);
+
+				}
+			}
+			if(num_equal != legalMoves.size()){
+				return MC_Scores;
+			}
+
 			numEliminated = 0;
 			for(int i = 0; i<legalMoves.size(); i++){
 				Eliminated.set(i, false);
 			}
+
 		}
 
 		curr_time = System.currentTimeMillis();
@@ -203,7 +245,7 @@ public class TheEliminator extends HeuristicGamer {
 				if(getStateMachine().isTerminal(tempState)){
 					double tempscore = getStateMachine().getGoal(tempState, getRole());
 					//tempscore+=1000.0/(double)levelcount;
-				//	tempscore-=levelcount;
+					//	tempscore-=levelcount;
 					//double tempscore =  getRelGoal(tempState);
 					scores.add(tempscore);
 					break;
@@ -245,6 +287,8 @@ public class TheEliminator extends HeuristicGamer {
 
 
 
+	//PUT IN RANKNIG AS THIRD COMPONENT
 
+	//Weighted averages
 
 }

@@ -52,7 +52,7 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 
 	@Override
 	public StateMachine getInitialStateMachine() {	
-		//return new ProverStateMachine();
+	//	return new ProverStateMachine();
 		return new SamplePropNetStateMachine();
 
 	}
@@ -102,7 +102,7 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 		}
 
 		int indexOfBestScore = 0;
-		double bestscore = 0;
+		double bestscore = -102;
 		for(int i = 0; i<legalMoves.size(); i++) {
 			double score = 0;
 			if (moveScores.size() > i) {
@@ -241,18 +241,20 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 	 */
 
 	private int _levelcount=0;
- 
-	
+
+
 	private Score_Depth maxScorePOST(MachineState state, int level, long timeout) throws GoalDefinitionException, TransitionDefinitionException, MoveDefinitionException{
 		if(getStateMachine().isTerminal(state)){ //base case 
 			//System.out.println("terminal");
 			double relGoal = getRelGoal(state);
 			//System.out.println("TERMINAL: " +level + " goal: "+relGoal);
 			if(level<=2){
-			//	System.out.println("WE FOUND IT");
+				//	System.out.println("WE FOUND IT");
 			}
-			if (relGoal<0) return new Score_Depth(-101,level);
-			if(relGoal>0) return new Score_Depth(101,level);
+			//if (relGoal<0) return new Score_Depth(-101,level);
+			//if(relGoal>0) return new Score_Depth(101,level);
+			if (relGoal<0) return new Score_Depth(relGoal,level);
+			if(relGoal>0) return new Score_Depth(relGoal,level);
 			return new Score_Depth(0,level);
 			//getStateMachine().getGoal(state, getRole());
 		}
@@ -284,10 +286,14 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 
 
 			if(currVal.score >= maxVal) {
-				if(currVal.score>maxVal) minDepth = currVal.depth;
-				maxVal = currVal.score;
 				validscore = true;
-				if(minDepth>=currVal.depth) minDepth = currVal.depth;
+				if(currVal.score>maxVal) {
+					minDepth = currVal.depth;
+					maxVal = currVal.score;
+				} else {
+					//maxVal = currVal.score;
+					if(minDepth>=currVal.depth) minDepth = currVal.depth;
+				}
 			}
 			//if(currVal.score == 101) return currVal;//  MAYBE CHANGE BACK
 			//	if(currVal==-2) continue;
@@ -318,11 +324,15 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 			//if(currVal==-2)continue;
 			//if(currVal.score==-101) return currVal;  // MAYBE CHANGE BACK
 			if(currVal.score <= minVal) {
-				//if(validscore) System.out.println("HEREAGAIN");
-				if(currVal.score<minVal) maxDepth = currVal.depth;
 				validscore = true;
-				minVal = currVal.score;
-				if(currVal.depth>=maxDepth) maxDepth = currVal.depth;
+				//if(validscore) System.out.println("HEREAGAIN");
+				if(currVal.score<minVal) {
+					maxDepth = currVal.depth;
+					minVal = currVal.score;
+				} else {
+					//minVal = currVal.score;
+					if(currVal.depth>=maxDepth) maxDepth = currVal.depth;
+				}
 			}
 		}
 		if(validscore) return new Score_Depth(minVal,maxDepth);
@@ -348,7 +358,8 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 		for(int i=0; i<allgoals.size(); i++){
 			average+=allgoals.get(i);
 		}
-		average /= allgoals.size();
+		average-=mygoal;
+		average /= (allgoals.size()-1);
 		return mygoal-average;
 
 		//		return _cacheHit;
