@@ -70,11 +70,13 @@
 ( <= ( next ( step ?s ) ) ( true ( step ?m ) ) ( succ ?m ?s ) )
 ( <= ( next ( mine ?x ?y ) ) ( true ( mine ?x ?y ) ) )
 
+( <= ( together ?p ?q ) ( true ( at ?x ?y ?p ) ) ( true ( at ?x ?y ?q ) ) ( distinct ?p ?q ) )
+
 ( <= terminal ( true ( step ?s ) ) ( game_end ?s ) )
 ( <= ( goal ?p 0 ) ( on_mine ?p ) )
-( <= ( goal ?p 100 ) ( true ( at ?x ?y ?p ) ) ( true ( at ?x ?y ?q ) ) ( distinct ?p ?q ) 
-    ( not ( on_mine ?p ) ) ( not ( on_mine ?q ) ) )
+( <= ( goal ?p 100 ) ( together ?p ?q ) ( not ( on_mine ?p ) ) ( not ( on_mine ?q ) ) )
 ( <= ( goal ?p 50 ) ( role ?p ) ( on_mine ?q ) ( distinct ?p ?q ) ( not ( on_mine ?p ) ) )
+( <= ( goal ?p 50 ) ( role ?p ) ( role ?q ) ( distinct ?p ?q ) ( not ( on_mine ?p ) ) ( not ( on_mine ?q ) ) ( not ( together ?p ?q ) ) )
  
 ( succ 0 1 )
 ( succ 1 2 )
