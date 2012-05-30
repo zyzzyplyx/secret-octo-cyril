@@ -1,9 +1,10 @@
- ( role red )
+( role red )
  ( role black )
 
  ( init ( control_normal red ) )
- ( init ( control_suicide black ) )
+ ( init ( control_suicide red ) )
 
+ ( <= ( legal ?p noop ) ( role ?p ) )
  ( <= ( legal red ( drop_normal ?x ) ) ( true ( control_normal red ) ) ( column_open_normal ?x ) )
  ( <= ( legal black ( drop_normal ?x ) ) ( true ( control_normal black ) ) ( column_open_normal ?x ) )
  ( <= ( next ( cell_normal ?x 1 ?player ) ) ( does ?player ( drop_normal ?x ) ) ( column_empty_normal ?x ) )

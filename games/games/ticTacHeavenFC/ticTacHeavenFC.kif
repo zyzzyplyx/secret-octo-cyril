@@ -13,25 +13,44 @@
 ( init ( cell_small 3 3 b ) )
 ( init ( control_small xplayer ) )
 ( init ( control_large xplayer ) )
+( init ( first_turn ) )
 
 ( index 1 )
 ( index 2 )
 ( index 3 )
 
+( <= ( legal ?p factorize ) ( role ?p ) ( true ( first_turn ) ) )
+( <= ( legal ?p dance ) ( role ?p ) ( true ( first_turn ) ) )
+( <= ( legal ?p cry ) ( role ?p ) ( true ( first_turn ) ) )
+( <= ( legal ?p laugh ) ( role ?p ) ( true ( first_turn ) ) )
+( <= ( legal ?p sing ) ( role ?p ) ( true ( first_turn ) ) )
+( <= ( legal ?p frolic ) ( role ?p ) ( true ( first_turn ) ) )
+( <= ( legal ?p twist ) ( role ?p ) ( true ( first_turn ) ) )
+
+( <= ( next ( factorized ?p ) ) ( does ?p factorize ) )
+( <= ( next ( factorized ?p ) ) ( true ( factorized ?p ) ) )
+
 ( <= ( next ( cell_small ?m ?n x ) ) ( does xplayer ( mark_small ?m ?n) ) ( true ( cell_small ?m ?n b ) ) )
 ( <= ( next ( cell_small ?m ?n o ) ) ( does oplayer ( mark_small ?m ?n) ) ( true ( cell_small ?m ?n b ) ) )
 ( <= ( next ( cell_small ?m ?n ?w ) ) ( true ( cell_small ?m ?n ?w ) ) ( distinct ?w b ) )
-( <= ( next ( cell_small ?m ?n b ) ) ( true ( cell_small ?m ?n b ) ) ( not ( does ?player ( mark_small ?m ?n) ) ) )
+
+( <= ( marking_small ?m ?n ) ( does ?p ( mark_small ?m ?n ) ) )
+( <= ( next ( cell_small ?m ?n b ) ) ( true ( cell_small ?m ?n b ) ) ( role ?player ) ( not ( marking_small ?m ?n ) ) )
 
 ( <= ( next ( mark_large ?i ?j ?k ?l ?m ) ) ( role ?player ) ( does ?player ( play_large ?i ?j ?k ?l ?m ) ) )
 ( <= ( next ( mark_large ?i ?j ?k ?l ?m ) ) ( true ( mark_large ?i ?j ?k ?l ?m ) ) )
+
+( <= large_played ( does ?player ( play_large ?i ?j ?k ?l ?m ) ) )
 ( <= ( next ( current_board ?k ?l ) ) ( role ?player ) ( does ?player ( play_large ?i ?j ?k ?l ?m ) ) )
+( <= ( next ( current_board ?k ?l ) ) ( true ( current_board ?k ?l ) ) ( not large_played ) )
+( <= ( next ( inhibit_small ?i ?j ?p ) ) ( role ?p ) ( does ?p ( play_large ?i ?j ?k ?l ?m ) ) )
+( <= ( next ( inhibit_small ?i ?j ?p ) ) ( true ( inhibit_small ?i ?j ?p ) ) )
 
 ( <= ( next ( control_small oplayer ) ) ( true ( control_small xplayer ) ) )
 ( <= ( next ( control_small xplayer ) ) ( true ( control_small oplayer ) ) )
 
 ( <= ( next ( control_large xplayer ) ) ( true ( control_large oplayer ) ) )
-( <= ( next ( control_large oplayer) ) ( true ( control_large xplayer ) ) )
+( <= ( next ( control_large oplayer ) ) ( true ( control_large xplayer ) ) )
 
 ( <= ( row_small ?m ?x ) ( true ( cell_small ?m 1 ?x ) ) 
   ( true ( cell_small ?m 2 ?x ) ) ( true ( cell_small ?m 3 ?x ) ) )
@@ -48,8 +67,9 @@
 ( <= open_small ( true ( cell_small ?m ?n b ) ) )
 
 ( <= ( legal ?p noop) ( role ?p ) )
-( <= ( legal ?w ( mark_small ?x ?y ) ) ( true ( cell_small ?x ?y b ) ) ( true ( control_small ?w ) ) )
-
+( <= ( special_cond_satisfied ?p ?x ?y ) ( index ?x ) ( index ?y ) ( true ( factorized ?p ) ) )
+( <= ( special_cond_satisfied ?p ?x ?y ) ( index ?x ) ( index ?y ) ( role ?p ) ( not ( true ( inhibit_small ?x ?y ?p ) ) ) )
+( <= ( legal ?w ( mark_small ?x ?y ) ) ( true ( cell_small ?x ?y b ) ) ( true ( control_small ?w ) ) ( special_cond_satisfied ?w ?x ?y ) )
 ( <= ( legal xplayer ( play_large ?i ?j ?k ?l x ) ) ( true ( control_large xplayer ) ) first_move_large ( empty_cell_large ?i ?j ?k ?l ) )
 ( <= ( legal xplayer ( play_large ?i ?j ?k ?l x ) ) ( true ( control_large xplayer ) ) ( true ( current_board ?i ?j ) ) ( empty_cell_large ?i ?j ?k ?l ) )
 ( <= ( legal xplayer ( play_large ?i ?j ?k ?l x ) ) ( true ( control_large xplayer ) ) cur_board_closed_large ( empty_cell_large ?i ?j ?k ?l ) )
