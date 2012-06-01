@@ -44,15 +44,18 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 	public class Score_Depth {
 		public double score;
 		public int depth;
-		public Score_Depth(double score, int depth){
+		public int rank;
+		public Score_Depth(double score, int depth, int rank){
 			this.score = score;
 			this.depth = depth;
+			this.rank = rank;
 		}
+
 	}
 
 	@Override
 	public StateMachine getInitialStateMachine() {	
-	//	return new ProverStateMachine();
+		//	return new ProverStateMachine();
 		return new SamplePropNetStateMachine();
 
 	}
@@ -253,9 +256,9 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 			}
 			//if (relGoal<0) return new Score_Depth(-101,level);
 			//if(relGoal>0) return new Score_Depth(101,level);
-			if (relGoal<0) return new Score_Depth(relGoal,level);
-			if(relGoal>0) return new Score_Depth(relGoal,level);
-			return new Score_Depth(0,level);
+			if (relGoal<0) return new Score_Depth(relGoal,level,getRank(state));
+			if(relGoal>0) return new Score_Depth(relGoal,level,getRank(state));
+			return new Score_Depth(0,level,-1);
 			//getStateMachine().getGoal(state, getRole());
 		}
 		//if(stopExpanding(state, level, timeout)) {
@@ -264,7 +267,7 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 			//return getHeuristicPOST(state, timeout); 
 			_levelcount++;
 			//	System.out.println("level: " +level + " count: "+_levelcount);
-			return new Score_Depth(0,level);
+			return new Score_Depth(0,level,-1);
 		}
 
 		List<Move> legalMoves = getStateMachine().getLegalMoves(state, getRole());
@@ -298,10 +301,11 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 			//if(currVal.score == 101) return currVal;//  MAYBE CHANGE BACK
 			//	if(currVal==-2) continue;
 		}
-		if(validscore) return new Score_Depth(maxVal,minDepth);
-		return new Score_Depth(0,level);
+		if(validscore) return new Score_Depth(maxVal,minDepth,-1);
+		return new Score_Depth(0,level,-1);
 		//return maxVal;
 	}
+
 
 	/*
 	 * Gets the minimum score a rational opponent would allow to be the value at
@@ -335,8 +339,8 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 				}
 			}
 		}
-		if(validscore) return new Score_Depth(minVal,maxDepth);
-		return new Score_Depth(0,level);
+		if(validscore) return new Score_Depth(minVal,maxDepth,-1);
+		return new Score_Depth(0,level,-1);
 		//return minVal;
 	}
 
@@ -365,4 +369,19 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 		//		return _cacheHit;
 
 	}
+	private int getRank(MachineState state) throws GoalDefinitionException {
+		double mygoal = getStateMachine().getGoal(state, getRole());
+		List<Integer> allgoals = getStateMachine().getGoals(state);
+		if(allgoals.size()==1) return 1;
+		double average=0;
+		int rank = 1;
+
+		for(int i=0; i<allgoals.size(); i++){
+			if(allgoals.get(i)>mygoal) rank++;
+
+		}
+		return rank;
+	//	return 0;
+	}
 }
+
