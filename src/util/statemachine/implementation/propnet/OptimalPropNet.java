@@ -51,7 +51,6 @@ public class OptimalPropNet extends StateMachine {
     
     private MachineState initialState;
     private MachineState currentState;
-    private int currentHeuristic;
     
     /**
      * Initializes the PropNetStateMachine. You should compute the topological
@@ -563,13 +562,13 @@ public class OptimalPropNet extends StateMachine {
 				heuristicRecursion(in, val/2/inputs.size());
 			}
 			else if(in instanceof util.propnet.architecture.components.And){
-				heuristicRecursion(in, val/inputs.size());
+				heuristicRecursion(in, val);
 			}
 			else if(in instanceof util.propnet.architecture.components.Not){
-				heuristicRecursion(in, -val/2);
+				heuristicRecursion(in, -val);
 			}
 			else{
-				heuristicRecursion(in, Math.max(0.0, val-1));
+				heuristicRecursion(in, val/inputs.size());
 			}
 		}		
 	}
