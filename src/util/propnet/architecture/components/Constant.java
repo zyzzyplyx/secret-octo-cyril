@@ -41,4 +41,9 @@ public final class Constant extends Component
 	{
 		return toDot("doublecircle", "grey", Boolean.toString(value).toUpperCase());
 	}
+
+	@Override
+	public String getCompileString() {
+		return "bools["+bitIndex+"] ="+(value? "true":"false")+"; ";
+	}
 }

@@ -27,4 +27,9 @@ public final class Transition extends Component
 	{
 		return toDot("box", "grey", "TRANSITION");
 	}
+
+	@Override
+	public String getCompileString() {
+		return "bools["+bitIndex+"] = bools["+this.getSingleInput().bitIndex+"]; ";
+	}
 }

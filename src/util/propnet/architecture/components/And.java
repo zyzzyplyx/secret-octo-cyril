@@ -35,4 +35,14 @@ public final class And extends Component
 		return toDot("invhouse", "grey", "AND");
 	}
 
+	@Override
+	public String getCompileString() {
+		String retStr = "bools["+bitIndex+"] =";
+		for(Component c : this.getInputs()){
+			retStr += "bools["+c.bitIndex+"] && ";
+		}
+		retStr = retStr.substring(0, retStr.length()-4) + "; ";
+		return retStr;
+	}
+
 }

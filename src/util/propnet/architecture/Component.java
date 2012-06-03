@@ -1,6 +1,7 @@
 package util.propnet.architecture;
 
 import java.io.Serializable;
+import java.util.BitSet;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -20,7 +21,8 @@ public abstract class Component implements Serializable
     private final Set<Component> outputs;
     
     private double heuristicValue;
-
+    public int bitIndex;
+    
     /**
      * Creates a new Component with no inputs or outputs.
      */
@@ -30,7 +32,12 @@ public abstract class Component implements Serializable
         this.outputs = new HashSet<Component>();
         heuristicValue = 0;
     }
-
+    
+ /* *********COMPILER ADDITIONS***************/
+    public abstract String getCompileString();
+    
+ /* *********END COMPILATION ADDITIONS   
+    
     /**
      * Adds a new input.
      * 
@@ -116,6 +123,7 @@ public abstract class Component implements Serializable
         assert outputs.size() == 1;
         return outputs.iterator().next();
     }
+    
 
     /**
      * Returns the value of the Component.

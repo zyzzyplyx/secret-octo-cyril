@@ -1,8 +1,13 @@
 package util.statemachine.implementation.propnet;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.reflect.Method;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -13,6 +18,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.tools.JavaCompiler;
+import javax.tools.ToolProvider;
+
 import com.sun.org.apache.xpath.internal.operations.And;
 
 import util.gdl.grammar.Gdl;
@@ -22,6 +30,7 @@ import util.gdl.grammar.GdlRelation;
 import util.gdl.grammar.GdlSentence;
 import util.gdl.grammar.GdlTerm;
 import util.propnet.architecture.Component;
+import util.propnet.architecture.PropCode;
 import util.propnet.architecture.PropNet;
 import util.propnet.architecture.components.Or;
 import util.propnet.architecture.components.Proposition;
@@ -51,6 +60,8 @@ public class OptimalPropNet extends StateMachine {
     
     private MachineState initialState;
     private MachineState currentState;
+    private PropCode propCode;
+    private boolean[] boolState;
     
     /**
      * Initializes the PropNetStateMachine. You should compute the topological
@@ -216,12 +227,12 @@ public class OptimalPropNet extends StateMachine {
 	public MachineState getNextState(MachineState state, List<Move> moves)
 	throws TransitionDefinitionException {
 		clearPropNet();
-		
     	//Use the moves to define inputs for the next state
 		Map<GdlTerm, Proposition> termToProps = propNet.getInputPropositions();
 		List<GdlTerm> moveTerms = toDoes(moves);
 		for (GdlTerm m : moveTerms) {
 			termToProps.get(m).setValue(true);
+			boolState[termToProps.get(m).bitIndex] = true;
 		}
 		return updateStateMachine(state);
 	}
@@ -231,6 +242,7 @@ public class OptimalPropNet extends StateMachine {
 		for(Proposition p : props){
 			p.setValue(false);
 		}
+		boolState = new boolean[propNet.getComponents().size()];
 	}
     
     private MachineState updateStateMachine(MachineState state) {
@@ -239,13 +251,22 @@ public class OptimalPropNet extends StateMachine {
 		Map<GdlTerm, Proposition> baseMap = propNet.getBasePropositions();
 		for (GdlSentence s : state.getContents()) {
 			baseMap.get(s.toTerm()).setValue(true);
+			boolState[baseMap.get(s.toTerm()).bitIndex] = true;
 			//System.out.println("adding "+s+"with val: "+baseMap.get(s.toTerm()).getHeuristicValue());
 		}
-    	
+		boolState = propCode.setPropNet(boolState);
+		for(int i = 0; i < boolState.length; i++){
+			System.out.print(boolState[i]+" ");
+		}
+		/*
     	//update the props in order
     	for(Proposition prop : ordering){
     		prop.setValue(prop.getSingleInput().getValue());
     	}
+    	*/
+		for(Proposition p : propNet.getPropositions()){
+			p.setValue(boolState[p.bitIndex]);
+		}
     	
     	currentState = state;
     	return getStateFromBase();
@@ -267,6 +288,13 @@ public class OptimalPropNet extends StateMachine {
 	 */
 	public List<Proposition> getOrdering()
 	{
+		  try {
+		   PrintWriter fout = new PrintWriter(new FileWriter("src/boolPropNet.java"));
+		   fout.write(  "public class boolPropNet implements util.propnet.architecture.PropCode {\n\n" +
+				   		"   public boolPropNet(){}\n\n"+
+		                "   public boolean[] setPropNet(boolean[] base){\n"+
+				   		"   		boolean[] bools = new boolean["+propNet.getComponents().size()+"];\n" +
+				   	    "			System.arraycopy(base, 0, bools, 0, base.length);\n");
 		  // List to contain the topological ordering.
 	       List<Proposition> order = new LinkedList<Proposition>();
 	       List<Proposition> orderFinal = new LinkedList<Proposition>();
@@ -275,6 +303,12 @@ public class OptimalPropNet extends StateMachine {
 	       solved.add(propNet.getInitProposition());
 	       solved.addAll(propNet.getBasePropositions().values());
 	       solved.addAll(propNet.getInputPropositions().values());
+	       
+	       int bitCounter = 0;
+	       for(Component c : solved){
+	    	   c.bitIndex = bitCounter;
+	    	   bitCounter++;
+	       }
 	       
 	       int numToSolve = propNet.getPropositions().size() - solved.size();
 
@@ -291,6 +325,9 @@ public class OptimalPropNet extends StateMachine {
 	                   }
 	                   if(allSolved){
 	                	   nowSolved.add(comp);
+	                	   comp.bitIndex = bitCounter;
+	                	   bitCounter++;
+	                	   fout.println("		"+comp.getCompileString());
 		            	   if(comp instanceof Proposition) order.add((Proposition)comp);
 	                   }
 	               }
@@ -306,8 +343,46 @@ public class OptimalPropNet extends StateMachine {
 					orderFinal.add(proposition);
 				}
 			}
+	        
 	       
-	       return orderFinal;
+	       //-----------------COMPILATION-------------------//
+            fout.write("		return bools;\n		}\n}");
+            fout.close();
+            JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+            int compilationResult = compiler.run(null, null, null, "src/boolPropNet.java");
+            if(compilationResult == 0){
+                System.out.println("Compilation is successful");
+            }else{
+                System.out.println("Compilation Failed");
+            }
+            
+            try
+            {    
+            	URL url = new URL("file://boolPropNet.class");
+            	URL[] urls = new URL[]{url};
+                // Create a new class loader with the directory
+                ClassLoader loader = new URLClassLoader(urls);
+                propCode = (PropCode) (loader.loadClass("boolPropNet")).newInstance();
+            }
+            catch (ClassNotFoundException e)
+            { 
+            	System.out.println("class not found");
+            }
+            catch (Exception ex)
+            {
+                ex.printStackTrace();
+            }
+            //------------------END COMPILATION---------------//
+            
+            
+            
+	        return orderFinal;
+		    
+		    } catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}       
+		  return null;
 	}
 	
 	/* Already implemented for you */

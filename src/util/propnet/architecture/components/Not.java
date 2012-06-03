@@ -27,4 +27,9 @@ public final class Not extends Component
 	{
 		return toDot("invtriangle", "grey", "NOT");
 	}
+
+	@Override
+	public String getCompileString() {
+		return "bools["+bitIndex+"] = !(bools["+this.getSingleInput().bitIndex+"]); ";
+	}
 }
