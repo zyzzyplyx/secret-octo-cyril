@@ -11,6 +11,7 @@ import util.statemachine.Role;
 import util.statemachine.exceptions.GoalDefinitionException;
 import util.statemachine.exceptions.MoveDefinitionException;
 import util.statemachine.exceptions.TransitionDefinitionException;
+import util.statemachine.implementation.propnet.OptimalPropNet;
 
 public class TheEliminator extends HeuristicGamer {
 	private static int LOOK_AHEAD = 1;
@@ -234,8 +235,7 @@ public class TheEliminator extends HeuristicGamer {
 
 	private double MonteCarlo(MachineState state, long timeout, Move move) throws GoalDefinitionException, TransitionDefinitionException, MoveDefinitionException {
 		List<Double> scores = new ArrayList<Double>();
-
-
+		
 		while(true){
 			MachineState tempState = state;
 			int levelcount=0;

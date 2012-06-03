@@ -11,6 +11,7 @@ import util.statemachine.StateMachine;
 import util.statemachine.exceptions.GoalDefinitionException;
 import util.statemachine.exceptions.MoveDefinitionException;
 import util.statemachine.exceptions.TransitionDefinitionException;
+import util.statemachine.implementation.propnet.OptimalPropNet;
 import util.statemachine.implementation.propnet.SamplePropNetStateMachine;
 import util.statemachine.implementation.prover.ProverStateMachine;
 
@@ -56,7 +57,7 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 	@Override
 	public StateMachine getInitialStateMachine() {	
 		//	return new ProverStateMachine();
-		return new SamplePropNetStateMachine();
+		return new OptimalPropNet();
 
 	}
 
@@ -68,7 +69,8 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 			throws TransitionDefinitionException, MoveDefinitionException,
 			GoalDefinitionException {
 		/* ***************NOT DOING METAGAMING YET************************/
-		((SamplePropNetStateMachine) getStateMachine()).factorDisjunctiveGoalStates(getRole());
+		((OptimalPropNet) getStateMachine()).factorDisjunctiveGoalStates(getRole());
+		((OptimalPropNet) getStateMachine()).setHeuristicValues(getRole());
 		System.out.println(getStateMachine().getInitialState());
 	}
 
@@ -222,9 +224,16 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 	 * for this state.  This is essentially a copy of maxScore which tracks moves.
 	 */
 	protected List<Score_Depth> getMovePOST(MachineState currState, long timeout, List<Move> legalMoves) throws MoveDefinitionException, TransitionDefinitionException, GoalDefinitionException{
+		
 		if(getStateMachine().isTerminal(currState)){
 			return new ArrayList<Score_Depth>();
 		}
+		System.out.println("Current Heurs: "+((OptimalPropNet)getStateMachine()).getHeuristic(currState));
+		for(Move move : getStateMachine().getLegalMoves(currState, getRole())){
+			System.out.println("Move: "+move.getContents()+" Heurs: "+((OptimalPropNet)getStateMachine()).getHeuristic(getStateMachine().getNextState(currState, getStateMachine().getRandomJointMove(currState, getRole(), move))));
+		}
+		
+		
 		List<Score_Depth> ScoreList = new ArrayList<Score_Depth>();
 		long curr_time = System.currentTimeMillis();
 		long time_step = (timeout-curr_time)/legalMoves.size();
@@ -354,7 +363,7 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 	public double getRelGoal(MachineState state) throws GoalDefinitionException{
 		double mygoal = getStateMachine().getGoal(state, getRole());
 		//return mygoal;
-
+		
 
 		List<Integer> allgoals = getStateMachine().getGoals(state);
 		if(allgoals.size()==1) return mygoal;
