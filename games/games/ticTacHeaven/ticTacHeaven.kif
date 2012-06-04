@@ -18,10 +18,11 @@
 ( index 2 )
 ( index 3 )
 
-( <= ( next ( cell_small ?m ?n x ) ) ( does xplayer ( mark_small ?m ?n) ) ( true ( cell_small ?m ?n b ) ) )
-( <= ( next ( cell_small ?m ?n o ) ) ( does oplayer ( mark_small ?m ?n) ) ( true ( cell_small ?m ?n b ) ) )
+( <= ( next ( cell_small ?m ?n x ) ) ( does xplayer ( mark_small ?m ?n ) ) ( true ( cell_small ?m ?n b ) ) )
+( <= ( next ( cell_small ?m ?n o ) ) ( does oplayer ( mark_small ?m ?n ) ) ( true ( cell_small ?m ?n b ) ) )
 ( <= ( next ( cell_small ?m ?n ?w ) ) ( true ( cell_small ?m ?n ?w ) ) ( distinct ?w b ) )
-( <= ( next ( cell_small ?m ?n b ) ) ( true ( cell_small ?m ?n b ) ) ( not ( does ?player ( mark_small ?m ?n) ) ) )
+( <= ( marking_small ?m ?n ) ( does ?player ( mark_small ?m ?n ) ) )
+( <= ( next ( cell_small ?m ?n b ) ) ( true ( cell_small ?m ?n b ) ) ( role ?player ) ( not ( marking_small ?m ?n ) ) )
 
 ( <= ( next ( mark_large ?i ?j ?k ?l ?m ) ) ( role ?player ) ( does ?player ( play_large ?i ?j ?k ?l ?m ) ) )
 ( <= ( next ( mark_large ?i ?j ?k ?l ?m ) ) ( true ( mark_large ?i ?j ?k ?l ?m ) ) )
@@ -47,7 +48,7 @@
 ( <= ( line_small ?x ) ( diag_small ?x ) )
 ( <= open_small ( true ( cell_small ?m ?n b ) ) )
 
-( <= ( legal ?p noop) ( role ?p ) )
+( <= ( legal ?p noop ) ( role ?p ) ( not ( true ( control_small ?p ) ) ) )
 ( <= ( legal ?w ( mark_small ?x ?y ) ) ( true ( cell_small ?x ?y b ) ) ( true ( control_small ?w ) ) )
 
 ( <= ( legal xplayer ( play_large ?i ?j ?k ?l x ) ) ( true ( control_large xplayer ) ) first_move_large ( empty_cell_large ?i ?j ?k ?l ) )

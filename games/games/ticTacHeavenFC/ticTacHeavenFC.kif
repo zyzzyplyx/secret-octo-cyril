@@ -35,7 +35,7 @@
 ( <= ( next ( cell_small ?m ?n ?w ) ) ( true ( cell_small ?m ?n ?w ) ) ( distinct ?w b ) )
 
 ( <= ( marking_small ?m ?n ) ( does ?p ( mark_small ?m ?n ) ) )
-( <= ( next ( cell_small ?m ?n b ) ) ( true ( cell_small ?m ?n b ) ) ( role ?player ) ( not ( marking_small ?m ?n ) ) )
+( <= ( next ( cell_small ?m ?n b ) ) ( true ( cell_small ?m ?n b ) ) ( not ( marking_small ?m ?n ) ) )
 
 ( <= ( next ( mark_large ?i ?j ?k ?l ?m ) ) ( role ?player ) ( does ?player ( play_large ?i ?j ?k ?l ?m ) ) )
 ( <= ( next ( mark_large ?i ?j ?k ?l ?m ) ) ( true ( mark_large ?i ?j ?k ?l ?m ) ) )
@@ -66,7 +66,7 @@
 ( <= ( line_small ?x ) ( diag_small ?x ) )
 ( <= open_small ( true ( cell_small ?m ?n b ) ) )
 
-( <= ( legal ?p noop) ( role ?p ) )
+( <= ( legal ?p noop ) ( role ?p ) ( not ( true ( control ?p ) ) ) )
 ( <= ( special_cond_satisfied ?p ?x ?y ) ( index ?x ) ( index ?y ) ( true ( factorized ?p ) ) )
 ( <= ( special_cond_satisfied ?p ?x ?y ) ( index ?x ) ( index ?y ) ( role ?p ) ( not ( true ( inhibit_small ?x ?y ?p ) ) ) )
 ( <= ( legal ?w ( mark_small ?x ?y ) ) ( true ( cell_small ?x ?y b ) ) ( true ( control_small ?w ) ) ( special_cond_satisfied ?w ?x ?y ) )
