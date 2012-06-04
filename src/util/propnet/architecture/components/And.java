@@ -32,7 +32,19 @@ public final class And extends Component
 	@Override
 	public String toString()
 	{
-		return toDot("invhouse", "grey", "AND");
+		return "AND @"+this.bitIndex;
+		//return toDot("invhouse", "grey", "AND");
+	}
+
+	@Override
+	public String getCompileString() {
+		String retStr = "b["+bitIndex+"] =";
+		String nameStr= "// AND ";
+		for(Component c : this.getInputs()){
+			retStr += "b["+c.bitIndex+"] && ";
+		}
+		retStr = retStr.substring(0, retStr.length()-4) + ";"; // AND  "+this.getInputs().toString();
+		return retStr;
 	}
 
 }

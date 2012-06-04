@@ -25,6 +25,12 @@ public final class Not extends Component
 	@Override
 	public String toString()
 	{
-		return toDot("invtriangle", "grey", "NOT");
+		return "NOT @"+this.bitIndex;
+		//return toDot("invtriangle", "grey", "NOT");
+	}
+
+	@Override
+	public String getCompileString() {
+		return "b["+bitIndex+"] = !(b["+this.getSingleInput().bitIndex+"]);"; //NOT @"+this.hashCode()+"  "+this.getSingleInput().toString();
 	}
 }

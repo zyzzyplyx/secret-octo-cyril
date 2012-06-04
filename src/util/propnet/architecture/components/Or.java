@@ -32,6 +32,17 @@ public final class Or extends Component
 	@Override
 	public String toString()
 	{
-		return toDot("ellipse", "grey", "OR");
+		return "OR @"+this.bitIndex;
+		//return toDot("ellipse", "grey", "OR");
+	}
+	
+	@Override
+	public String getCompileString() {
+		String retStr = "b["+bitIndex+"]=";
+		for(Component c : this.getInputs()){
+			retStr += "b["+c.bitIndex+"] || ";
+		}
+		retStr = retStr.substring(0, retStr.length()-4) + ";"; //OR  "+this.getInputs().toString();
+		return retStr;
 	}
 }

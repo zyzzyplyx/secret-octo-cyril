@@ -77,6 +77,12 @@ public final class Proposition extends Component
 	@Override
 	public String toString()
 	{
-		return toDot("circle", value ? "red" : "white", name.toString());
+		return name.toString()+" @"+this.bitIndex;
+		//return toDot("circle", value ? "red" : "white", name.toString());
+	}
+
+	@Override
+	public String getCompileString() {
+		return "b["+bitIndex+"] = b["+this.getSingleInput().bitIndex+"];"; //"+this.getName()+" input:"+this.getSingleInput().toString();
 	}
 }
