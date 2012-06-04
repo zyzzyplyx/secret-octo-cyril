@@ -4,6 +4,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -54,6 +55,7 @@ public class OptimalPropNet extends StateMachine {
     private MachineState currentState;
     private PropCode propCode;
     private boolean[] boolState;
+    private BitSet bitState;
     
     /**
      * Initializes the PropNetStateMachine. You should compute the topological
@@ -79,6 +81,8 @@ public class OptimalPropNet extends StateMachine {
 	{
     	clearPropNet();
     	propNet.getInitProposition().setValue(true);//should be the only true proposition at start
+    	assert(propNet.getInitProposition().bitIndex != -1);
+    	boolState[propNet.getInitProposition().bitIndex] = true;
     	return updateStateMachine(new MachineState(new HashSet<GdlSentence>()));//empty base
 	}
     
@@ -110,7 +114,6 @@ public class OptimalPropNet extends StateMachine {
 			clearPropNet();
 			updateStateMachine(state);
 		}
-    	
         Set<Proposition> goals = propNet.getGoalPropositions().get(role);
         Proposition goal = null;
         //loop over goals and make sure only one is true in this state
@@ -231,10 +234,12 @@ public class OptimalPropNet extends StateMachine {
 	}
 	
 	private void clearPropNet(){
+		/*
 		Set<Proposition> props = propNet.getPropositions();
 		for(Proposition p : props){
 			p.setValue(false);
 		}
+		*/
 		boolState = new boolean[propNet.getComponents().size()];
 	}
     
@@ -307,11 +312,10 @@ public class OptimalPropNet extends StateMachine {
 	    	   c.bitIndex = bitCounter;
 	    	   bitCounter++;
 	       }
-	       
 	       int numToSolve = propNet.getPropositions().size() - solved.size();
-
-	       while(order.size() < numToSolve){
-	    	   Set<Component> nowSolved = new HashSet<Component>();
+	       Set<Component> nowSolved = new HashSet<Component>();
+	       while(bitCounter < propNet.getComponents().size()-1){
+	    	   nowSolved = new HashSet<Component>();
 	           for(Component comp : propNet.getComponents()){	   
 	        	   if(!solved.contains(comp)){
 	            	   boolean allSolved = true;
@@ -347,6 +351,9 @@ public class OptimalPropNet extends StateMachine {
 					orderFinal.add(proposition);
 				}
 			}*/
+	       for(Component c : propNet.getComponents()){
+	    	   if(c.bitIndex == -1) System.out.println(c.toString()+" with inputs: "+c.getInputs().toString()+" was not reached");
+	       }
 	       orderFinal = order;
 	        
 	       
@@ -452,8 +459,8 @@ public class OptimalPropNet extends StateMachine {
 		Set<GdlSentence> contents = new HashSet<GdlSentence>();
 		for (Proposition p : propNet.getBasePropositions().values())
 		{
-			p.setValue(p.getSingleInput().getValue());
-			if (p.getValue())
+			p.setValue(boolState[p.getSingleInput().bitIndex]);
+			if (p.getValue()) //should have a dynamic method to set this.
 				contents.add(p.getName().toSentence());
 		}
 		return new MachineState(contents);
