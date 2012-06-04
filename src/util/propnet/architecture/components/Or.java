@@ -32,7 +32,8 @@ public final class Or extends Component
 	@Override
 	public String toString()
 	{
-		return toDot("ellipse", "grey", "OR");
+		return "OR @"+this.bitIndex;
+		//return toDot("ellipse", "grey", "OR");
 	}
 	
 	@Override
@@ -41,7 +42,7 @@ public final class Or extends Component
 		for(Component c : this.getInputs()){
 			retStr += "bools["+c.bitIndex+"] || ";
 		}
-		retStr = retStr.substring(0, retStr.length()-4) + "; ";
+		retStr = retStr.substring(0, retStr.length()-4) + "; //OR  "+this.getInputs().toString();
 		return retStr;
 	}
 }

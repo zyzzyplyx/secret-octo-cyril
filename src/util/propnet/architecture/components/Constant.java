@@ -39,11 +39,12 @@ public final class Constant extends Component
 	@Override
 	public String toString()
 	{
-		return toDot("doublecircle", "grey", Boolean.toString(value).toUpperCase());
+		return Boolean.toString(value).toUpperCase() + " @"+this.bitIndex;
+		//return toDot("doublecircle", "grey", Boolean.toString(value).toUpperCase());
 	}
 
 	@Override
 	public String getCompileString() {
-		return "bools["+bitIndex+"] ="+(value? "true":"false")+"; ";
+		return "bools["+bitIndex+"] ="+(value? "true":"false")+"; //"+value;
 	}
 }

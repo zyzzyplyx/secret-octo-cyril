@@ -31,6 +31,7 @@ public abstract class Component implements Serializable
         this.inputs = new HashSet<Component>();
         this.outputs = new HashSet<Component>();
         heuristicValue = 0;
+        bitIndex = -1;
     }
     
  /* *********COMPILER ADDITIONS***************/

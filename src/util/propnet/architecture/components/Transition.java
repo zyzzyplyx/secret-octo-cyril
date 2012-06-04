@@ -25,11 +25,12 @@ public final class Transition extends Component
 	@Override
 	public String toString()
 	{
-		return toDot("box", "grey", "TRANSITION");
+		return "TRANS @"+this.bitIndex;
+		//return toDot("box", "grey", "TRANSITION");
 	}
 
 	@Override
 	public String getCompileString() {
-		return "bools["+bitIndex+"] = bools["+this.getSingleInput().bitIndex+"]; ";
+		return "bools["+bitIndex+"] = bools["+this.getSingleInput().bitIndex+"]; //TRANS from: "+this.getSingleInput().toString();
 	}
 }

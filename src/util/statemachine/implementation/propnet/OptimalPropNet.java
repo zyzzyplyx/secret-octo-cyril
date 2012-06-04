@@ -32,6 +32,7 @@ import util.gdl.grammar.GdlTerm;
 import util.propnet.architecture.Component;
 import util.propnet.architecture.PropCode;
 import util.propnet.architecture.PropNet;
+import util.propnet.architecture.propClassLoader;
 import util.propnet.architecture.components.Or;
 import util.propnet.architecture.components.Proposition;
 import util.propnet.factory.OptimizingPropNetFactory;
@@ -207,6 +208,7 @@ public class OptimalPropNet extends StateMachine {
 	 */
 	public double getHeuristic(MachineState state){
 		double heurs = 0;
+		clearPropNet();
 		updateStateMachine(state);
 		/*
 		Map<GdlTerm, Proposition> baseMap = propNet.getBasePropositions();
@@ -255,19 +257,26 @@ public class OptimalPropNet extends StateMachine {
 			//System.out.println("adding "+s+"with val: "+baseMap.get(s.toTerm()).getHeuristicValue());
 		}
 		boolState = propCode.setPropNet(boolState);
-		for(int i = 0; i < boolState.length; i++){
-			System.out.print(boolState[i]+" ");
-		}
-		/*
+		
     	//update the props in order
+		boolean mismatch = false;
     	for(Proposition prop : ordering){
     		prop.setValue(prop.getSingleInput().getValue());
+    		
+    		if(prop.getValue() != boolState[prop.bitIndex]){
+    			mismatch = true;
+    			System.out.println("Mismatch on "+prop.getName()+" with index "+prop.bitIndex+"|| prop: "+prop.getValue()+" || bool: "+boolState[prop.bitIndex]);
+    		}
     	}
-    	*/
+    	if (mismatch){
+    		System.out.println("State was: "+state.getContents());
+    		System.out.println("--------------------------------------------------------------------");
+    	}
+    	/*
 		for(Proposition p : propNet.getPropositions()){
 			p.setValue(boolState[p.bitIndex]);
 		}
-    	
+    	*/
     	currentState = state;
     	return getStateFromBase();
     }    
@@ -292,9 +301,7 @@ public class OptimalPropNet extends StateMachine {
 		   PrintWriter fout = new PrintWriter(new FileWriter("src/boolPropNet.java"));
 		   fout.write(  "public class boolPropNet implements util.propnet.architecture.PropCode {\n\n" +
 				   		"   public boolPropNet(){}\n\n"+
-		                "   public boolean[] setPropNet(boolean[] base){\n"+
-				   		"   		boolean[] bools = new boolean["+propNet.getComponents().size()+"];\n" +
-				   	    "			System.arraycopy(base, 0, bools, 0, base.length);\n");
+		                "   public boolean[] setPropNet(boolean[] bools){\n");
 		  // List to contain the topological ordering.
 	       List<Proposition> order = new LinkedList<Proposition>();
 	       List<Proposition> orderFinal = new LinkedList<Proposition>();
@@ -334,7 +341,7 @@ public class OptimalPropNet extends StateMachine {
 	           }
 	           solved.addAll(nowSolved);
 	       }
-	       
+	       /*
 	       for (Proposition proposition : order) {
 				if (proposition.getSingleInput().toString().contains("TRUE")) {
 					proposition.setValue(true);
@@ -342,7 +349,8 @@ public class OptimalPropNet extends StateMachine {
 				} else {
 					orderFinal.add(proposition);
 				}
-			}
+			}*/
+	       orderFinal = order;
 	        
 	       
 	       //-----------------COMPILATION-------------------//
@@ -358,23 +366,20 @@ public class OptimalPropNet extends StateMachine {
             
             try
             {    
-            	URL url = new URL("file://boolPropNet.class");
-            	URL[] urls = new URL[]{url};
                 // Create a new class loader with the directory
-                ClassLoader loader = new URLClassLoader(urls);
-                propCode = (PropCode) (loader.loadClass("boolPropNet")).newInstance();
+                ClassLoader loader = new propClassLoader(propClassLoader.class.getClassLoader());
+                Class propClass = loader.loadClass("boolPropNet");
+                propCode = (PropCode) propClass.newInstance();
             }
             catch (ClassNotFoundException e)
             { 
-            	System.out.println("class not found");
+            	e.printStackTrace();
             }
             catch (Exception ex)
             {
                 ex.printStackTrace();
             }
             //------------------END COMPILATION---------------//
-            
-            
             
 	        return orderFinal;
 		    
