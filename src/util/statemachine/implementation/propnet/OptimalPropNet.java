@@ -1,16 +1,9 @@
 package util.statemachine.implementation.propnet;
 
-import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.lang.reflect.Method;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -20,8 +13,6 @@ import java.util.Set;
 
 import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
-
-import com.sun.org.apache.xpath.internal.operations.And;
 
 import util.gdl.grammar.Gdl;
 import util.gdl.grammar.GdlConstant;
@@ -261,8 +252,8 @@ public class OptimalPropNet extends StateMachine {
     	//update the props in order
 		boolean mismatch = false;
     	for(Proposition prop : ordering){
-    		prop.setValue(prop.getSingleInput().getValue());
-    		
+    		//prop.setValue(prop.getSingleInput().getValue());
+    		prop.setValue(boolState[prop.bitIndex]);
     		if(prop.getValue() != boolState[prop.bitIndex]){
     			mismatch = true;
     			System.out.println("Mismatch on "+prop.getName()+" with index "+prop.bitIndex+"|| prop: "+prop.getValue()+" || bool: "+boolState[prop.bitIndex]);
@@ -301,7 +292,7 @@ public class OptimalPropNet extends StateMachine {
 		   PrintWriter fout = new PrintWriter(new FileWriter("src/boolPropNet.java"));
 		   fout.write(  "public class boolPropNet implements util.propnet.architecture.PropCode {\n\n" +
 				   		"   public boolPropNet(){}\n\n"+
-		                "   public boolean[] setPropNet(boolean[] bools){\n");
+		                "   public boolean[] setPropNet(boolean[] b){\n");
 		  // List to contain the topological ordering.
 	       List<Proposition> order = new LinkedList<Proposition>();
 	       List<Proposition> orderFinal = new LinkedList<Proposition>();
@@ -334,7 +325,13 @@ public class OptimalPropNet extends StateMachine {
 	                	   nowSolved.add(comp);
 	                	   comp.bitIndex = bitCounter;
 	                	   bitCounter++;
+	                	   if(bitCounter%1000 == 0){
+	                		   fout.write("\n        b = set"+bitCounter+"(b);\n"+
+	                				   	  "		return b;\n }\n"+
+	                				   	  "	private boolean[] set"+bitCounter+"(boolean[] b){\n");
+	                	   }
 	                	   fout.println("		"+comp.getCompileString());
+	                	   
 		            	   if(comp instanceof Proposition) order.add((Proposition)comp);
 	                   }
 	               }
@@ -354,7 +351,7 @@ public class OptimalPropNet extends StateMachine {
 	        
 	       
 	       //-----------------COMPILATION-------------------//
-            fout.write("		return bools;\n		}\n}");
+            fout.write("		return b;\n		}\n}");
             fout.close();
             JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
             int compilationResult = compiler.run(null, null, null, "src/boolPropNet.java");

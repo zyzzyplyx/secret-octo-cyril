@@ -38,12 +38,12 @@ public final class And extends Component
 
 	@Override
 	public String getCompileString() {
-		String retStr = "bools["+bitIndex+"] =";
+		String retStr = "b["+bitIndex+"] =";
 		String nameStr= "// AND ";
 		for(Component c : this.getInputs()){
-			retStr += "bools["+c.bitIndex+"] && ";
+			retStr += "b["+c.bitIndex+"] && ";
 		}
-		retStr = retStr.substring(0, retStr.length()-4) + "; // AND  "+this.getInputs().toString();
+		retStr = retStr.substring(0, retStr.length()-4) + ";"; // AND  "+this.getInputs().toString();
 		return retStr;
 	}
 

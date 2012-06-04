@@ -31,6 +31,6 @@ public final class Not extends Component
 
 	@Override
 	public String getCompileString() {
-		return "bools["+bitIndex+"] = !(bools["+this.getSingleInput().bitIndex+"]); //NOT @"+this.hashCode()+"  "+this.getSingleInput().toString();
+		return "b["+bitIndex+"] = !(b["+this.getSingleInput().bitIndex+"]);"; //NOT @"+this.hashCode()+"  "+this.getSingleInput().toString();
 	}
 }

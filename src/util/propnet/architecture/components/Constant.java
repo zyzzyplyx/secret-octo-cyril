@@ -45,6 +45,6 @@ public final class Constant extends Component
 
 	@Override
 	public String getCompileString() {
-		return "bools["+bitIndex+"] ="+(value? "true":"false")+"; //"+value;
+		return "b["+bitIndex+"] ="+(value? "true":"false")+";";//"+value;
 	}
 }

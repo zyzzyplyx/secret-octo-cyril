@@ -38,11 +38,11 @@ public final class Or extends Component
 	
 	@Override
 	public String getCompileString() {
-		String retStr = "bools["+bitIndex+"] =";
+		String retStr = "b["+bitIndex+"]=";
 		for(Component c : this.getInputs()){
-			retStr += "bools["+c.bitIndex+"] || ";
+			retStr += "b["+c.bitIndex+"] || ";
 		}
-		retStr = retStr.substring(0, retStr.length()-4) + "; //OR  "+this.getInputs().toString();
+		retStr = retStr.substring(0, retStr.length()-4) + ";"; //OR  "+this.getInputs().toString();
 		return retStr;
 	}
 }

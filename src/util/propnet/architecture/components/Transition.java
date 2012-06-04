@@ -31,6 +31,6 @@ public final class Transition extends Component
 
 	@Override
 	public String getCompileString() {
-		return "bools["+bitIndex+"] = bools["+this.getSingleInput().bitIndex+"]; //TRANS from: "+this.getSingleInput().toString();
+		return "b["+bitIndex+"] = b["+this.getSingleInput().bitIndex+"];"; //TRANS from: "+this.getSingleInput().toString();
 	}
 }
