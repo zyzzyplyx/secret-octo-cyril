@@ -58,6 +58,7 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 	public StateMachine getInitialStateMachine() {	
 		//	return new ProverStateMachine();
 		return new OptimalPropNet();
+		//return new SamplePropNetStateMachine();
 
 	}
 
