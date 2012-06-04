@@ -116,7 +116,7 @@ public class TheEliminator extends HeuristicGamer {
 			if(quickMiniMax.get(i).score==101){
 				List<Double> MC_Scores = new ArrayList<Double>();
 				for(int j=0; j<numMoves; j++){
-					if(quickMiniMax.get(j).score==101){
+					if(quickMiniMax.get(j).score==100){
 						MC_Scores.add(100.0-quickMiniMax.get(j).depth);   //POSSIBLE HEURISTIC
 						//MC_Scores.add(100.0 + 1.0/(double)quickMiniMax.get(j).depth);
 					} else {
@@ -126,7 +126,7 @@ public class TheEliminator extends HeuristicGamer {
 				}
 				return MC_Scores;
 			}
-			if(quickMiniMax.get(i).score==-101){
+			if(quickMiniMax.get(i).score==-100){
 				numEliminated++;
 				Eliminated.set(i, true);
 				MC_List.get(i).add(0.0);
