@@ -299,20 +299,18 @@ public class OptimalPropNet extends StateMachine {
 	                   if(allSolved){
 	                	   nowSolved.add(comp);
 	                	   if((comp instanceof Proposition)||(comp instanceof Transition)){
-	                		   if((comp.getSingleInput() instanceof Proposition)||(comp.getSingleInput() instanceof Transition)){
-	                			   comp.bitIndex = comp.getSingleInput().bitIndex;
-	                		   }
-	                		   else{
-	                			   comp.bitIndex = bitCounter;
-			                	   bitCounter++;
-			                	   if(bitCounter%1000 == 0){
-			                		   fout.write(("\n        b = set"+bitCounter+"(b);\n"+
-			                				   	  "		return b;\n }\n"+
-			                				   	  "	private boolean[] set"+bitCounter+"(boolean[] b){\n").getBytes());
-			                	   }
-			                	   fout.write(("		"+comp.getEvalExp()+"\n").getBytes());
-	                		   }//should only compute any truth value once...whoops.
-		                	   order.add(comp);
+	                		   comp.bitIndex = comp.getSingleInput().bitIndex;
+	                		   order.add(comp);
+                		   }
+                		   else{
+                			   comp.bitIndex = bitCounter;
+		                	   bitCounter++;
+		                	   if(bitCounter%1000 == 0){
+		                		   fout.write(("\n        b = set"+bitCounter+"(b);\n"+
+		                				   	  "		return b;\n }\n"+
+		                				   	  "	private boolean[] set"+bitCounter+"(boolean[] b){\n").getBytes());
+		                	   }
+		                	   fout.write(("		"+comp.getEvalExp()+"\n").getBytes());
 	                	   }
 	                   }
 	               }
@@ -327,12 +325,15 @@ public class OptimalPropNet extends StateMachine {
 				} else {
 					orderFinal.add(proposition);
 				}
-			}*/
+			}
+			
 	       for(Component c : propNet.getComponents()){
 	    	   if(c.bitIndex == -1) System.out.println(c.toString()+" with inputs: "+c.getInputs().toString()+" was not reached");
-	       }
+	       }*/
+	       
 	       //orderFinal = order;
 	        
+	       System.out.println("\n---------------------\n\n"+propNet.getComponents().size()+"\n------------------------\n");
 	       
 	       //-----------------COMPILATION-------------------//
             fout.write(("		return b;\n		}\n}").getBytes());
