@@ -386,6 +386,7 @@ public class SamplePropNetStateMachine extends StateMachine {
 	 * Checks to see if this game is disjunctively factorable.
 	 * returns the number of factored games 
 	 */
+	@Override
 	public int factorDisjunctiveGoalStates(Role role) {
 		PrintWriter fout;
 
