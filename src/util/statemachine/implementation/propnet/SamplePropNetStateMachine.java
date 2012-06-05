@@ -38,62 +38,63 @@ import util.statemachine.implementation.prover.result.ProverResultParser;
 
 @SuppressWarnings("unused")
 public class SamplePropNetStateMachine extends StateMachine {
-    /** The underlying proposition network  */
-    private PropNet propNet;
-    /** The topological ordering of the propositions */
-    private List<Proposition> ordering;
-    /** The player roles */
-    private List<Role> roles;
-    /**The factors of this game, with their goal states as keys*/
-    Map<Component, Set<Component>> factors;
-    Map<Component, Set<Proposition>> factorLegalsMap;
-    LinkedList<Component> goalOrdering;
-    Set<Proposition> selectedLegals;
-    Set<Proposition> deadStates = new HashSet<Proposition>();
-    
-    private MachineState initialState;
-    private MachineState currentState;
-    /**
-     * Initializes the PropNetStateMachine. You should compute the topological
-     * ordering here. Additionally you may compute the initial state here, at
-     * your discretion.
-     */
-    @Override
-    public void initialize(List<Gdl> description) {
-        try {
+	/** The underlying proposition network  */
+	private PropNet propNet;
+	/** The topological ordering of the propositions */
+	private List<Proposition> ordering;
+	/** The player roles */
+	private List<Role> roles;
+	/**The factors of this game, with their goal states as keys*/
+	Map<Component, Set<Component>> factors;
+	Map<Component, Set<Proposition>> factorLegalsMap;
+	LinkedList<Component> goalOrdering;
+	Set<Proposition> selectedLegals;
+	Set<Proposition> latches = new HashSet<Proposition>();
+	Set<Proposition> falseLatches = new HashSet<Proposition>();
+
+	private MachineState initialState;
+	private MachineState currentState;
+	/**
+	 * Initializes the PropNetStateMachine. You should compute the topological
+	 * ordering here. Additionally you may compute the initial state here, at
+	 * your discretion.
+	 */
+	@Override
+	public void initialize(List<Gdl> description) {
+		try {
 			propNet = OptimizingPropNetFactory.create(description);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-        roles = propNet.getRoles();
-        ordering = getOrdering();
-        initialState = computeInitialState();
-        propNet.renderToFile("graph.dot");
-        System.out.println("order: "+ordering.toString());
-        System.out.println("initState: "+initialState.toString());
-    }    
-    
-    private MachineState computeInitialState()
+		roles = propNet.getRoles();
+		ordering = getOrdering();
+		initialState = computeInitialState();
+		propNet.renderToFile("graph.dot");
+		//  System.out.println("order: "+ordering.toString());
+		// System.out.println("initState: "+initialState.toString());
+	}    
+
+	private MachineState computeInitialState()
 	{
-    	clearPropNet();
-    	propNet.getInitProposition().setValue(true);//should be the only true proposition at start
-    	return updateStateMachine(new MachineState(new HashSet<GdlSentence>()));//empty base
+		clearPropNet();
+		propNet.getInitProposition().setValue(true);//should be the only true proposition at start
+		return updateStateMachine(new MachineState(new HashSet<GdlSentence>()));//empty base
 	}
-    
+
 	/**
 	 * Computes if the state is terminal. Should return the value
 	 * of the terminal proposition for the state.
 	 */
-    @Override
-    public boolean isTerminal(MachineState state) {
+	@Override
+	public boolean isTerminal(MachineState state) {
 		if(!state.equals(currentState)){
 			clearPropNet();
 			updateStateMachine(state);
 		}
 		//once the state machine is on the right state, it's easy to read get terminal
-        return propNet.getTerminalProposition().getValue();
-    }
-	
+		return propNet.getTerminalProposition().getValue();
+	}
+
 	/**
 	 * Computes the goal for a role in the current state.
 	 * Should return the value of the goal proposition that
@@ -101,27 +102,27 @@ public class SamplePropNetStateMachine extends StateMachine {
 	 * proposition true for that role, then you should throw a
 	 * GoalDefinitionException because the goal is ill-defined. 
 	 */
-    @Override
-    public int getGoal(MachineState state, Role role)
-    throws GoalDefinitionException {
+	@Override
+	public int getGoal(MachineState state, Role role)
+			throws GoalDefinitionException {
 		if(!state.equals(currentState)){
 			clearPropNet();
 			updateStateMachine(state);
 		}
-    	
-        Set<Proposition> goals = propNet.getGoalPropositions().get(role);
-        Proposition goal = null;
-        //loop over goals and make sure only one is true in this state
-        for(Proposition g : goals){
-            if(g.getValue()){
-                if(goal != null) throw new GoalDefinitionException(state, role);
-                goal = g;
-            }
-        }
-        if(goal == null) throw new GoalDefinitionException(state, role);
-        return getGoalValue(goal);
-    }
-	
+
+		Set<Proposition> goals = propNet.getGoalPropositions().get(role);
+		Proposition goal = null;
+		//loop over goals and make sure only one is true in this state
+		for(Proposition g : goals){
+			if(g.getValue()){
+				if(goal != null) throw new GoalDefinitionException(state, role);
+				goal = g;
+			}
+		}
+		if(goal == null) throw new GoalDefinitionException(state, role);
+		return getGoalValue(goal);
+	}
+
 	/**
 	 * Returns the initial state. The initial state can be computed
 	 * by only setting the truth value of the INIT proposition to true,
@@ -131,12 +132,12 @@ public class SamplePropNetStateMachine extends StateMachine {
 	public MachineState getInitialState() {
 		return initialState;
 	}
-	
-	
+
+
 	public Map<Component, Set<Component>> getFactorMap(){
 		return factors;
 	}
-	
+
 	public List<Move> getFactorLegalMoves(MachineState state, Role role, Component factorKey){
 		if(!state.equals(currentState)){
 			clearPropNet();
@@ -159,10 +160,10 @@ public class SamplePropNetStateMachine extends StateMachine {
 				System.out.println("contained: "+selectedLegals.contains(prop));
 			}
 		}
-		*/
+		 */
 		return moves;
 	}
-	
+
 	/**
 	 * Computes the legal moves for role in state, returning a set which only affects a single
 	 * factor.  It prefers to return moves affecting the primary goal game, but if there are no 
@@ -170,7 +171,7 @@ public class SamplePropNetStateMachine extends StateMachine {
 	 */
 	@Override
 	public List<Move> getLegalMoves(MachineState state, Role role)
-	throws MoveDefinitionException {
+			throws MoveDefinitionException {
 		List<Move> moves = new ArrayList<Move>();
 		if(goalOrdering == null){
 			if(!state.equals(currentState)){
@@ -191,16 +192,16 @@ public class SamplePropNetStateMachine extends StateMachine {
 		}
 		return moves;
 	}
-	
+
 	/**
 	 * Computes the next state given state and the list of moves.
 	 */
 	@Override
 	public MachineState getNextState(MachineState state, List<Move> moves)
-	throws TransitionDefinitionException {
+			throws TransitionDefinitionException {
 		clearPropNet();
-		
-    	//Use the moves to define inputs for the next state
+
+		//Use the moves to define inputs for the next state
 		Map<GdlTerm, Proposition> termToProps = propNet.getInputPropositions();
 		List<GdlTerm> moveTerms = toDoes(moves);
 		for (GdlTerm m : moveTerms) {
@@ -209,29 +210,29 @@ public class SamplePropNetStateMachine extends StateMachine {
 
 		return updateStateMachine(state);
 	}
-	
+
 	private void clearPropNet(){
 		Set<Proposition> props = propNet.getPropositions();
 		for(Proposition p : props){
 			p.setValue(false);
 		}
 	}
-    
-    private MachineState updateStateMachine(MachineState state) {
+
+	private MachineState updateStateMachine(MachineState state) {
 		//map the state to base propositions
 		Map<GdlTerm, Proposition> baseMap = propNet.getBasePropositions();
 		for (GdlSentence s : state.getContents()) {
 			baseMap.get(s.toTerm()).setValue(true);
 		}
-    	
-    	//update the props in order
-    	for(Proposition prop : ordering)
-    		prop.setValue(prop.getSingleInput().getValue());
-    	
-    	currentState = state;
-    	return getStateFromBase();
-    }    
-	
+
+		//update the props in order
+		for(Proposition prop : ordering)
+			prop.setValue(prop.getSingleInput().getValue());
+
+		currentState = state;
+		return getStateFromBase();
+	}    
+
 	/**
 	 * This should compute the topological ordering of propositions.
 	 * Each component is either a proposition, logical gate, or transition.
@@ -248,52 +249,52 @@ public class SamplePropNetStateMachine extends StateMachine {
 	 */
 	public List<Proposition> getOrdering()
 	{
-		  // List to contain the topological ordering.
-	       List<Proposition> order = new LinkedList<Proposition>();
-	       List<Proposition> orderFinal = new LinkedList<Proposition>();
+		// List to contain the topological ordering.
+		List<Proposition> order = new LinkedList<Proposition>();
+		List<Proposition> orderFinal = new LinkedList<Proposition>();
 
-	       // All of the components in the PropNet
-	       Set<Component> components = new HashSet<Component>(propNet.getComponents());
-	       
-	       Set<Component> solved = new HashSet<Component>();
-	       solved.add(propNet.getInitProposition());
-	       solved.addAll(propNet.getBasePropositions().values());
-	       solved.addAll(propNet.getInputPropositions().values());
-	       
-	       int numToSolve = propNet.getPropositions().size() - solved.size();
+		// All of the components in the PropNet
+		Set<Component> components = new HashSet<Component>(propNet.getComponents());
 
-	       while(order.size() < numToSolve){
-	    	   Set<Component> nowSolved = new HashSet<Component>();
-	           for(Component comp : propNet.getComponents()){	   
-	        	   if(!solved.contains(comp)){
-	            	   boolean allSolved = true;
-	                   for(Component in : comp.getInputs()){
-	                	   if(!solved.contains(in)){
-	                		   allSolved = false;
-	                		   break;
-	                	   }
-	                   }
-	                   if(allSolved){
-	                	   nowSolved.add(comp);
-		            	   if(comp instanceof Proposition) order.add((Proposition)comp);
-	                   }
-	               }
-	           }
-	           solved.addAll(nowSolved);
-	       }
-	       
-	       for (Proposition proposition : order) {
-				if (proposition.getSingleInput().toString().contains("TRUE")) {
-					proposition.setValue(true);
-					propNet.getPropositions().remove(proposition);
-				} else {
-					orderFinal.add(proposition);
+		Set<Component> solved = new HashSet<Component>();
+		solved.add(propNet.getInitProposition());
+		solved.addAll(propNet.getBasePropositions().values());
+		solved.addAll(propNet.getInputPropositions().values());
+
+		int numToSolve = propNet.getPropositions().size() - solved.size();
+
+		while(order.size() < numToSolve){
+			Set<Component> nowSolved = new HashSet<Component>();
+			for(Component comp : propNet.getComponents()){	   
+				if(!solved.contains(comp)){
+					boolean allSolved = true;
+					for(Component in : comp.getInputs()){
+						if(!solved.contains(in)){
+							allSolved = false;
+							break;
+						}
+					}
+					if(allSolved){
+						nowSolved.add(comp);
+						if(comp instanceof Proposition) order.add((Proposition)comp);
+					}
 				}
 			}
-	       
-	       return orderFinal;
+			solved.addAll(nowSolved);
+		}
+
+		for (Proposition proposition : order) {
+			if (proposition.getSingleInput().toString().contains("TRUE")) {
+				proposition.setValue(true);
+				propNet.getPropositions().remove(proposition);
+			} else {
+				orderFinal.add(proposition);
+			}
+		}
+
+		return orderFinal;
 	}
-	
+
 	/* Already implemented for you */
 	@Override
 	public List<Role> getRoles() {
@@ -301,7 +302,7 @@ public class SamplePropNetStateMachine extends StateMachine {
 	}
 
 	/* Helper methods */
-		
+
 	/**
 	 * The Input propositions are indexed by (does ?player ?action).
 	 * 
@@ -317,7 +318,7 @@ public class SamplePropNetStateMachine extends StateMachine {
 	{
 		List<GdlTerm> doeses = new ArrayList<GdlTerm>(moves.size());
 		Map<Role, Integer> roleIndices = getRoleIndices();
-		
+
 		for (int i = 0; i < roles.size(); i++)
 		{
 			int index = roleIndices.get(roles.get(i));
@@ -325,7 +326,7 @@ public class SamplePropNetStateMachine extends StateMachine {
 		}
 		return doeses;
 	}
-	
+
 	/**
 	 * Takes in a Legal Proposition and returns the appropriate corresponding Move
 	 * @param p
@@ -335,19 +336,19 @@ public class SamplePropNetStateMachine extends StateMachine {
 	{
 		return new Move(p.getName().toSentence().get(1).toSentence());
 	}
-	
+
 	/**
 	 * Helper method for parsing the value of a goal proposition
 	 * @param goalProposition
 	 * @return the integer value of the goal proposition
 	 */	
-    private int getGoalValue(Proposition goalProposition)
+	private int getGoalValue(Proposition goalProposition)
 	{
 		GdlRelation relation = (GdlRelation) goalProposition.getName().toSentence();
 		GdlConstant constant = (GdlConstant) relation.get(1);
 		return Integer.parseInt(constant.toString());
 	}
-	
+
 	/**
 	 * A Naive implementation that computes a PropNetMachineState
 	 * from the true BasePropositions.  This is correct but slower than more advanced implementations
@@ -365,7 +366,7 @@ public class SamplePropNetStateMachine extends StateMachine {
 		}
 		return new MachineState(contents);
 	}
-	
+
 	boolean shouldIgnore(Component comp){
 		boolean fixed = true;
 		for(Component in : comp.getInputs()){
@@ -377,16 +378,16 @@ public class SamplePropNetStateMachine extends StateMachine {
 				(comp.equals(propNet.getInitProposition()))||
 				(comp.equals(propNet.getTerminalProposition()))||
 				propNet.getGoalPropositions().containsValue(comp);
-				
+
 	}
-	
+
 	/*
 	 * Checks to see if this game is disjunctively factorable.
 	 * returns the number of factored games 
 	 */
 	public int factorDisjunctiveGoalStates(Role role) {
 		PrintWriter fout;
-		
+
 		goalOrdering = null;
 		Set<Proposition> goalProps = propNet.getGoalPropositions().get(role);
 		Proposition bestGoal = null;
@@ -406,11 +407,11 @@ public class SamplePropNetStateMachine extends StateMachine {
 				System.out.println("regular goal"+goalProp.toString());
 			}
 		}
-		
+
 		//there are up to n factors, where n is the number of inputs to the goal prop
 		factors = new HashMap<Component, Set<Component>>();
 		if(bestGoal == null) return 0;
-		
+
 		//make a set of all propositions affecting each input
 		for(Component factorGoal : bestGoal.getSingleInput().getInputs()){
 			Set<Component> f = new HashSet<Component>();
@@ -439,78 +440,78 @@ public class SamplePropNetStateMachine extends StateMachine {
 			}	
 			factors.put(factorGoal, f);
 		}
-		
+
 		//print to file for debugging
 		try {
 			fout = new PrintWriter(new FileWriter("out.txt"));
 			fout.println(factors.size());
-		
-		//check for overlap of the generated sets
-		List<Component> keys = new ArrayList<Component>(factors.keySet());
-		System.out.println(factors.size());
-		Map<Component, Set<Component>> oldFactors = new HashMap<Component, Set<Component>>(factors);
-		factors.clear();
-		for(int i = 0; i < keys.size(); i++){
-			boolean noMatch = true;
-			for(int j = i+1; j < keys.size(); j++){
-				Set<Component> copy = new HashSet<Component>(oldFactors.get(keys.get(i)));
-				copy.retainAll(oldFactors.get(keys.get(j)));
-				System.out.println("comparison made");
-				if(copy.size() > 0){
-					fout.print("OVERLAP: ");
-					fout.println(copy);
-					System.out.println("removed an overlapping factor");
-					noMatch = false;
-					break;
+
+			//check for overlap of the generated sets
+			List<Component> keys = new ArrayList<Component>(factors.keySet());
+			System.out.println(factors.size());
+			Map<Component, Set<Component>> oldFactors = new HashMap<Component, Set<Component>>(factors);
+			factors.clear();
+			for(int i = 0; i < keys.size(); i++){
+				boolean noMatch = true;
+				for(int j = i+1; j < keys.size(); j++){
+					Set<Component> copy = new HashSet<Component>(oldFactors.get(keys.get(i)));
+					copy.retainAll(oldFactors.get(keys.get(j)));
+					System.out.println("comparison made");
+					if(copy.size() > 0){
+						fout.print("OVERLAP: ");
+						fout.println(copy);
+						System.out.println("removed an overlapping factor");
+						noMatch = false;
+						break;
+					}
 				}
+				if(noMatch) factors.put(keys.get(i), oldFactors.get(keys.get(i)));			
 			}
-			if(noMatch) factors.put(keys.get(i), oldFactors.get(keys.get(i)));			
-		}
-		
-		//select the simplest game, but prepare data for all of them
-		System.out.println(factors.size());
-		if(factors.size() > 1){
-			goalOrdering = new LinkedList<Component>();
-			factorLegalsMap = new HashMap<Component, Set<Proposition>>();
-			for(Component key: factors.keySet()){
-				//put the goals in order of complexity
-				if(goalOrdering.size() == 0){
-					goalOrdering.addFirst(key);
-				}
-				else{
-					for(int i = 0; i < goalOrdering.size(); i++){
-						if(factors.get(key).size() < factors.get(goalOrdering.get(i)).size()){
-							goalOrdering.add(i, key);
+
+			//select the simplest game, but prepare data for all of them
+			System.out.println(factors.size());
+			if(factors.size() > 1){
+				goalOrdering = new LinkedList<Component>();
+				factorLegalsMap = new HashMap<Component, Set<Proposition>>();
+				for(Component key: factors.keySet()){
+					//put the goals in order of complexity
+					if(goalOrdering.size() == 0){
+						goalOrdering.addFirst(key);
+					}
+					else{
+						for(int i = 0; i < goalOrdering.size(); i++){
+							if(factors.get(key).size() < factors.get(goalOrdering.get(i)).size()){
+								goalOrdering.add(i, key);
+							}
+						}
+						if(!goalOrdering.contains(key)) goalOrdering.addLast(key);
+					}					
+
+					Set<Proposition> factorLegals = new HashSet<Proposition>();
+					for(Component comp : factors.get(key)){
+						if(propNet.getLegalInputMap().containsKey(comp)){
+							factorLegals.add(propNet.getLegalInputMap().get(comp));
 						}
 					}
-					if(!goalOrdering.contains(key)) goalOrdering.addLast(key);
-				}					
-				
-				Set<Proposition> factorLegals = new HashSet<Proposition>();
-				for(Component comp : factors.get(key)){
-					if(propNet.getLegalInputMap().containsKey(comp)){
-						factorLegals.add(propNet.getLegalInputMap().get(comp));
-					}
+					factorLegalsMap.put(key, factorLegals);
 				}
-				factorLegalsMap.put(key, factorLegals);
+				fout.println("goalOrdering: "+goalOrdering.toString());
+				selectedLegals = factorLegalsMap.get(goalOrdering.get(0));
+
+				fout.print("legals: ");
+				fout.println(selectedLegals);
 			}
-			fout.println("goalOrdering: "+goalOrdering.toString());
-			selectedLegals = factorLegalsMap.get(goalOrdering.get(0));
-	
-			fout.print("legals: ");
-			fout.println(selectedLegals);
-		}
-		
-		fout.close();
+
+			fout.close();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+
 		return factors.size();		
 	}
-	
-	
+
+
 	public void printf(String string) {
 		System.out.println(string);
 	}
@@ -536,7 +537,7 @@ public class SamplePropNetStateMachine extends StateMachine {
 	/*
 	 * Returns whether or not list contains node. If remove is true, then node will be removed from list if it is contained in it.
 	 */
-	public boolean listContainsNode(List<AuxNode> list, AuxNode node, boolean remove) {
+	private boolean listContainsNode(List<AuxNode> list, AuxNode node, boolean remove) {
 		for (AuxNode auxNode : list) {
 			if (auxNode.equals(node)) {
 				return true;
@@ -548,7 +549,7 @@ public class SamplePropNetStateMachine extends StateMachine {
 	/*
 	 * Finds a cycle
 	 */
-	public boolean findCycle(AuxNode node, List<AuxNode> nextNodes, List<AuxNode> cycleNodes, List<AuxNode> allCheckedNodes) {
+	private boolean findCycle(AuxNode node, List<AuxNode> nextNodes, List<AuxNode> cycleNodes, List<AuxNode> allCheckedNodes) {
 		for (AuxNode nextNode : nextNodes) {
 			if (node.equals(nextNode)) {
 				return true;
@@ -565,7 +566,7 @@ public class SamplePropNetStateMachine extends StateMachine {
 		return false;
 	}
 
-	public boolean findGoal(AuxNode goal, List<AuxNode> nextNodes, List<AuxNode> checkedNodes) {
+	private boolean findGoal(AuxNode goal, List<AuxNode> nextNodes, List<AuxNode> checkedNodes) {
 		for (AuxNode nextNode : nextNodes) {
 			if (nextNode.proposition.equals(goal.proposition)) {
 				return true;
@@ -580,7 +581,7 @@ public class SamplePropNetStateMachine extends StateMachine {
 		return false;
 	}
 
-	public void findLatchInhibiters(List<AuxNode> auxGraph, Role role) {
+	private void findLatchInhibiters(List<AuxNode> auxGraph, Role role) {
 		List<Proposition> goodGoals = new ArrayList<Proposition>();
 		List<Proposition> badGoals = new ArrayList<Proposition>();
 		for (Proposition goal : propNet.getGoalPropositions().get(role)) {
@@ -593,39 +594,49 @@ public class SamplePropNetStateMachine extends StateMachine {
 
 		//Find latches
 		for (AuxNode node : auxGraph) {
-			if (node.mark) {
-				List<AuxNode> cycleNodes = new ArrayList<AuxNode>();
-				cycleNodes.add(node);
-				List<AuxNode> allCheckedNodes = new ArrayList<AuxNode>();
-				allCheckedNodes.add(node);
-				if (findCycle(node, node.next, cycleNodes, allCheckedNodes)) {
-					int numBaseProps = 0;
-					for (AuxNode cycleNode : cycleNodes) {
-						if (propNet.getBasePropositions().values().contains(cycleNode.proposition)) {
-							numBaseProps++;
-							if (numBaseProps > 1) {
-								break;
-							}
+			List<AuxNode> cycleNodes = new ArrayList<AuxNode>();
+			cycleNodes.add(node);
+			List<AuxNode> allCheckedNodes = new ArrayList<AuxNode>();
+			allCheckedNodes.add(node);
+			if (findCycle(node, node.next, cycleNodes, allCheckedNodes)) {
+				int numBaseProps = 0;
+				for (AuxNode cycleNode : cycleNodes) {
+					if (propNet.getBasePropositions().values().contains(cycleNode.proposition)) {
+						numBaseProps++;
+						if (numBaseProps > 1) {
+							break;
 						}
 					}
-					if (numBaseProps == 1) {
-						//Determine if latch is inhibiter
-						for (Proposition goal : goodGoals) {
-							List<AuxNode> checkedNodes = new ArrayList<AuxNode>();
-							checkedNodes.add(node);
-							if (findGoal(new AuxNode(goal, false), node.next, checkedNodes)) {
-								printf("Found path to good goal from " + node.proposition.toString() + node.mark);
-								deadStates.add(node.proposition);
+				}
+				if (numBaseProps == 1) {
+					//Determine if latch is inhibiter
+					for (Proposition goodGoal : goodGoals) {
+						List<AuxNode> checkedNodes = new ArrayList<AuxNode>();
+						checkedNodes.add(node);
+						if (findGoal(new AuxNode(goodGoal, false), node.next, checkedNodes)) {
+							if (node.mark) {
+								printf(node.mark + node.proposition.toString() + "Inhibts " + goodGoal.toString());
+								latches.add(node.proposition);
+							} else {
+								printf(node.mark + node.proposition.toString() + "implies " + goodGoal.toString());
+								falseLatches.add(node.proposition);
 							}
-						}
 
-						for (Proposition goal : badGoals) {
-							List<AuxNode> checkedNodes = new ArrayList<AuxNode>();
-							checkedNodes.add(node);
-							if (findGoal(new AuxNode(goal, true), node.next, checkedNodes)) {
-								printf("Found path to bad goal from " + node.proposition.toString() + node.mark);
-								deadStates.add(node.proposition);
+						}
+					}
+
+					for (Proposition badGoal : badGoals) {
+						List<AuxNode> checkedNodes = new ArrayList<AuxNode>();
+						checkedNodes.add(node);
+						if (findGoal(new AuxNode(badGoal, true), node.next, checkedNodes)) {
+							if (node.mark) {
+								printf(node.mark + node.proposition.toString() + "Is a requirement for " + badGoal.toString());
+								latches.add(node.proposition);
+							} else {
+								printf(node.mark + node.proposition.toString() + "Is an antirequirement " + badGoal.toString());
+								falseLatches.add(node.proposition);
 							}
+
 						}
 					}
 				}
@@ -633,7 +644,7 @@ public class SamplePropNetStateMachine extends StateMachine {
 		}
 	}
 
-	public void addNextProposition(AuxNode node, boolean inputMark, Component gate, Map<Proposition, AuxNode> trueNodes, Map<Proposition, AuxNode> falseNodes) {			
+	private void addNextProposition(AuxNode node, boolean inputMark, Component gate, Map<Proposition, AuxNode> trueNodes, Map<Proposition, AuxNode> falseNodes) {			
 		for (Component output : gate.getOutputs()) {
 			if (output instanceof Proposition) {
 				if (inputMark) {
@@ -697,7 +708,7 @@ public class SamplePropNetStateMachine extends StateMachine {
 					addNextProposition(markedNode, false, output, trueNodes, falseNodes);
 					addNextProposition(unmarkedNode, true, output, trueNodes, falseNodes);
 				} else if (output instanceof util.propnet.architecture.components.Or) {
-					addNextProposition(markedNode, true, output, trueNodes, falseNodes);
+					addNextProposition(markedNode, true, output, trueNodes, falseNodes);		
 				} else if (output instanceof util.propnet.architecture.components.And) {
 					addNextProposition(unmarkedNode, false, output, trueNodes, falseNodes);
 				} else {
@@ -707,15 +718,22 @@ public class SamplePropNetStateMachine extends StateMachine {
 			}
 		}
 
-		findLatchInhibiters(auxGraph, role);
+		findLatchInhibiters(auxGraph, role);		
+
 		printf("dead state removal complete!");
 	}
 
 	@Override
 	public boolean stateIsDead(MachineState state) {
 		Map<GdlTerm, Proposition> baseMap = propNet.getBasePropositions();
+		for (Proposition falseLatch : falseLatches) {
+			if (!baseMap.values().contains(falseLatch)) {
+				return true;
+			}
+		}
 		for (GdlSentence s : state.getContents()) {
-			if (deadStates.contains(baseMap.get(s.toTerm()))) {
+			Proposition base = baseMap.get(s.toTerm());
+			if (latches.contains(base)) {
 				return true;
 			}
 		}
