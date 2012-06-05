@@ -36,6 +36,7 @@ public abstract class Component implements Serializable
     
  /* *********COMPILER ADDITIONS***************/
     public abstract String getCompileString();
+    public abstract String getEvalExp();
     
  /* *********END COMPILATION ADDITIONS   
     

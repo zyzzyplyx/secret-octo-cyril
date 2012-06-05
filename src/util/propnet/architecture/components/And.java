@@ -38,13 +38,18 @@ public final class And extends Component
 
 	@Override
 	public String getCompileString() {
-		String retStr = "b["+bitIndex+"] =";
-		String nameStr= "// AND ";
+		String retStr = "(";//"b["+bitIndex+"] =";
 		for(Component c : this.getInputs()){
-			retStr += "b["+c.bitIndex+"] && ";
+			retStr += c.getCompileString()+" && ";
 		}
-		retStr = retStr.substring(0, retStr.length()-4) + ";"; // AND  "+this.getInputs().toString();
+		retStr = retStr.substring(0, retStr.length()-4) + ")"; // AND  "+this.getInputs().toString();
 		return retStr;
+	}
+
+	@Override
+	public String getEvalExp() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

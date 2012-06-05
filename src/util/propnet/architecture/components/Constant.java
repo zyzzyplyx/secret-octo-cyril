@@ -45,6 +45,12 @@ public final class Constant extends Component
 
 	@Override
 	public String getCompileString() {
-		return "b["+bitIndex+"] ="+(value? "true":"false")+";";//"+value;
+		return (value? "true":"false");//"+value;
+	}
+
+	@Override
+	public String getEvalExp() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }
