@@ -107,8 +107,11 @@ public class TheEliminator extends HeuristicGamer {
 		int numEliminated = 0;
 
 		_levelsToExpand = 10000;
+		_stopTimeMiniMax = timeout - (timeout-curr_time)/2;
 		List<Score_Depth> quickMiniMax = getMovePOST(getCurrentState(), timeout - (timeout-curr_time)/2, legalMoves);
 
+		
+		
 		/**
 		 * Dead state removal
 		 */
@@ -208,6 +211,8 @@ public class TheEliminator extends HeuristicGamer {
 				System.out.println("WHOOPS");
 				break;
 			}
+			if(System.currentTimeMillis() >= _stopTime) break;
+
 			if(System.currentTimeMillis()>curr_time + (numEliminated+2)*time_step){
 				numEliminated++;
 				double worstscore = 100;
@@ -264,7 +269,7 @@ public class TheEliminator extends HeuristicGamer {
 		if(range>=1){
 			for(int j=0; j<numMoves; j++){
 				Score_Depth temp = quickMiniMax.get(j);
-				temp.propheur = (temp.propheur-minscore)/range+0.5;
+				temp.propheur = (temp.propheur-minscore)/range+2;
 				quickMiniMax.set(j,temp);
 			}
 			for(int j=0; j<numMoves; j++){
@@ -296,11 +301,9 @@ public class TheEliminator extends HeuristicGamer {
 			int levelcount=0;
 
 			while(true){
+				if(System.currentTimeMillis() >= _stopTime) return average_score(scores);
 				levelcount++;
 				if(getStateMachine().isTerminal(tempState)){
-					//double tempscore = getStateMachine().getGoal(tempState, getRole());
-					//tempscore+=1000.0/(double)levelcount;
-					//	tempscore-=levelcount;
 					double tempscore =  getRelGoal(tempState);
 					scores.add(tempscore);
 					break;
