@@ -48,7 +48,6 @@ public final class Or extends Component
 
 	@Override
 	public String getEvalExp() {
-		// TODO Auto-generated method stub
-		return null;
+		return "b["+bitIndex+"]="+getCompileString()+";";
 	}
 }

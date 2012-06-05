@@ -265,8 +265,11 @@ public class OptimalPropNet extends StateMachine {
 	public List<Component> getOrdering()
 	{
 		  try {
-		   FileOutputStream fout = new FileOutputStream("src/boolPropNet.java");
-		   fout.write(("public class boolPropNet implements util.propnet.architecture.PropCode {\n\n" +
+		   int classCounter = 0;
+		   FileOutputStream fout = new FileOutputStream("src/boolCode/boolPropNet.java");
+		   fout.write(("package boolCode;" +
+		   				"import boolCode.boolPropNet"+classCounter+";\n" +
+		   				"public class boolPropNet implements util.propnet.architecture.PropCode {\n\n" +
 				   		"   public boolPropNet(){}\n\n"+
 		                "   public boolean[] setPropNet(boolean[] b){\n").getBytes());
 		  // List to contain the topological ordering.
@@ -280,6 +283,7 @@ public class OptimalPropNet extends StateMachine {
 	       int numToSolve = propNet.getPropositions().size() - solved.size() + propNet.getBasePropositions().size();// +propNet.getInputPropositions().size();//all propositions and transitions
 	       
 	       int bitCounter = 0;
+	       int methodCounter = 0;
 	       for(Component c : solved){
 	    	   c.bitIndex = bitCounter;
 	    	   bitCounter++;
@@ -299,20 +303,31 @@ public class OptimalPropNet extends StateMachine {
 	                   if(allSolved){
 	                	   nowSolved.add(comp);
 	                	   if((comp instanceof Proposition)||(comp instanceof Transition)){
-	                		   if((comp.getSingleInput() instanceof Proposition)||(comp.getSingleInput() instanceof Transition)){
-	                			   comp.bitIndex = comp.getSingleInput().bitIndex;
-	                		   }
-	                		   else{
-	                			   comp.bitIndex = bitCounter;
-			                	   bitCounter++;
-			                	   if(bitCounter%1000 == 0){
-			                		   fout.write(("\n        b = set"+bitCounter+"(b);\n"+
-			                				   	  "		return b;\n }\n"+
-			                				   	  "	private boolean[] set"+bitCounter+"(boolean[] b){\n").getBytes());
-			                	   }
-			                	   fout.write(("		"+comp.getEvalExp()+"\n").getBytes());
-	                		   }//should only compute any truth value once...whoops.
-		                	   order.add(comp);
+	                		   comp.bitIndex = comp.getSingleInput().bitIndex;
+	                		   order.add(comp);
+                		   }
+                		   else{
+                			   comp.bitIndex = bitCounter;
+		                	   bitCounter++;
+		                	   if(bitCounter%1000 == 0){
+		                		   methodCounter++;
+		                		   if(methodCounter%100 == 0){
+		                			   fout.write(("		boolPropNet"+classCounter+".setPropNet(b);\n"+
+		                					   		"		return b;\n		}\n}").getBytes());
+		                			   fout.close();
+		                			   fout = new FileOutputStream("src/boolCode/boolPropNet"+classCounter+".java");
+		                			   classCounter++;
+		                			   fout.write(("package boolCode;" +
+		                			   				"import boolCode.boolPropNet"+classCounter+";\n"+
+		                					   		"public class boolPropNet"+(classCounter-1)+" implements util.propnet.architecture.PropCode {\n\n" +
+		                					   		"   public boolPropNet"+(classCounter-1)+"(){}\n\n"+
+		                			                "   public boolean[] setPropNet(boolean[] b){\n").getBytes());
+		                		   }
+		                		   fout.write(("\n        b = set"+bitCounter+"(b);\n"+
+		                				   	  "		return b;\n }\n"+
+		                				   	  "	private boolean[] set"+bitCounter+"(boolean[] b){\n").getBytes());
+		                	   }
+		                	   fout.write(("		"+comp.getEvalExp()+"\n").getBytes());
 	                	   }
 	                   }
 	               }
@@ -327,19 +342,31 @@ public class OptimalPropNet extends StateMachine {
 				} else {
 					orderFinal.add(proposition);
 				}
-			}*/
+			}
+			
 	       for(Component c : propNet.getComponents()){
 	    	   if(c.bitIndex == -1) System.out.println(c.toString()+" with inputs: "+c.getInputs().toString()+" was not reached");
-	       }
+	       }*/
+	       
 	       //orderFinal = order;
 	        
+	       System.out.println("\n---------------------\n\n"+propNet.getComponents().size()+"\n------------------------\n");
 	       
 	       //-----------------COMPILATION-------------------//
-            fout.write(("		return b;\n		}\n}").getBytes());
+	       fout.write(("		return b;\n		}\n}").getBytes());
+		   fout.close();
+		   fout = new FileOutputStream("src/boolCode/boolPropNet"+classCounter+".java");
+		   fout.write(("package boolCode;" +
+		   				"public class boolPropNet"+classCounter+" implements util.propnet.architecture.PropCode {\n\n" +
+				   		"   public boolPropNet"+classCounter+"(){}\n\n"+
+		                "   public boolean[] setPropNet(boolean[] b){return b;}}").getBytes());
             fout.close();
             JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-            System.out.println("got comp");
-            int compilationResult = compiler.run(null, null, null, "src/boolPropNet.java");
+            for(int i = classCounter; i >= 0; i--){
+            	int compilationResult = compiler.run(null, null, null, "src/boolCode/boolPropNet"+i+".java");
+            	System.out.println("compiled: "+i);
+            }
+            int compilationResult = compiler.run(null, null, null, "src/boolCode/boolPropNet.java");
             if(compilationResult == 0){
                 System.out.println("Compilation is successful");
             }else{

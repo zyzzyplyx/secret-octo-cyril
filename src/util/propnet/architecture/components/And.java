@@ -48,8 +48,7 @@ public final class And extends Component
 
 	@Override
 	public String getEvalExp() {
-		// TODO Auto-generated method stub
-		return null;
+		return "b["+bitIndex+"]="+getCompileString()+";";
 	}
 
 }

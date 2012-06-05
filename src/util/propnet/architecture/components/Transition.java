@@ -36,6 +36,6 @@ public final class Transition extends Component
 
 	@Override
 	public String getEvalExp() {
-		return "b["+this.bitIndex+"] = "+this.getCompileString()+";";
+		return "b["+bitIndex+"]="+getCompileString()+";";
 	}
 }
