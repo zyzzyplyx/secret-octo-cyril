@@ -72,6 +72,7 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 		/* ***************NOT DOING METAGAMING YET************************/
 		((OptimalPropNet) getStateMachine()).factorDisjunctiveGoalStates(getRole());
 		((OptimalPropNet) getStateMachine()).setHeuristicValues(getRole());
+		getStateMachine().deadStateRemoval(getRole());
 		System.out.println(getStateMachine().getInitialState());
 	}
 
@@ -286,7 +287,7 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 		//System.out.println("timestep_inmax: "+time_step);
 
 		boolean validscore = false;
-		double maxVal = -1000;
+		double maxVal = -10000;
 		int minDepth = 1000;
 		int bestrank = 1000;
 		//choose the move with the max value against a rational player
@@ -345,7 +346,11 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 		for(int i = 0; i<jointMoves.size(); i++){
 			List<Move> jointMove = jointMoves.get(i);
 			_numStatesExpanded++;
-			Score_Depth currVal = maxScorePOST(getStateMachine().getNextState(state, jointMove), level+1, curr_time + (i+1)*time_step);
+			MachineState nextState = getStateMachine().getNextState(state, jointMove);
+			if (getStateMachine().stateIsDead(nextState)) {
+				return new Score_Depth(-1000, level, -1);
+			}
+			Score_Depth currVal = maxScorePOST(nextState, level+1, curr_time + (i+1)*time_step);
 			//if(currVal==-2)continue;
 			//if(currVal.score==-101) return currVal;  // MAYBE CHANGE BACK
 

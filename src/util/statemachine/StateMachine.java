@@ -25,6 +25,10 @@ public abstract class StateMachine
     // ============================================
     //  The following methods are required for a valid
     // state machine implementation.    
+	
+	public abstract boolean stateIsDead(MachineState state);
+	public abstract void deadStateRemoval(Role role);
+	
     public abstract void initialize(List<Gdl> description);
 
     public abstract int getGoal(MachineState state, Role role) throws GoalDefinitionException;
