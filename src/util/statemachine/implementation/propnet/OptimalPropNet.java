@@ -656,4 +656,16 @@ public class OptimalPropNet extends StateMachine {
 			}
 		}		
 	}
+
+	@Override
+	public boolean stateIsDead(MachineState state) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public void deadStateRemoval(Role role) {
+		// TODO Auto-generated method stub
+		
+	}
 }
