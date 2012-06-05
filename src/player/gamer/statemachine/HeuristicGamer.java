@@ -62,9 +62,8 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 	@Override
 	public StateMachine getInitialStateMachine() {	
 		//	return new ProverStateMachine();
-		return new OptimalPropNet();
-		//return new SamplePropNetStateMachine();
-
+		//return new OptimalPropNet();
+		return new SamplePropNetStateMachine();
 	}
 
 	@Override
@@ -75,10 +74,10 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 			throws TransitionDefinitionException, MoveDefinitionException,
 			GoalDefinitionException {
 		/* ***************NOT DOING METAGAMING YET************************/
-		((OptimalPropNet) getStateMachine()).factorDisjunctiveGoalStates(getRole());
-		((OptimalPropNet) getStateMachine()).setHeuristicValues(getRole());
+		//((OptimalPropNet) getStateMachine()).factorDisjunctiveGoalStates(getRole());
+		getStateMachine().setHeuristicValues(getRole());
 		getStateMachine().deadStateRemoval(getRole());
-		System.out.println(getStateMachine().getInitialState());
+		//System.out.println(getStateMachine().getInitialState());
 	}
 
 	@Override
@@ -235,10 +234,10 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 		if(getStateMachine().isTerminal(currState)){
 			return new ArrayList<Score_Depth>();
 		}
-		System.out.println("Current Heurs: "+((OptimalPropNet)getStateMachine()).getHeuristic(currState));
-		for(Move move : getStateMachine().getLegalMoves(currState, getRole())){
-			System.out.println("Move: "+move.getContents()+" Heurs: "+((OptimalPropNet)getStateMachine()).getHeuristic(getStateMachine().getNextState(currState, getStateMachine().getRandomJointMove(currState, getRole(), move))));
-		}
+//		System.out.println("Current Heurs: "+((OptimalPropNet)getStateMachine()).getHeuristic(currState));
+//		for(Move move : getStateMachine().getLegalMoves(currState, getRole())){
+//			System.out.println("Move: "+move.getContents()+" Heurs: "+((OptimalPropNet)getStateMachine()).getHeuristic(getStateMachine().getNextState(currState, getStateMachine().getRandomJointMove(currState, getRole(), move))));
+//		}
 
 
 		List<Score_Depth> ScoreList = new ArrayList<Score_Depth>();
@@ -272,9 +271,9 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 			}
 			//if (relGoal<0) return new Score_Depth(-101,level);
 			//if(relGoal>0) return new Score_Depth(101,level);
-			if (relGoal<0) return new Score_Depth(relGoal,level,getRank(state),((OptimalPropNet)getStateMachine()).getHeuristic(state));
-			if(relGoal>0) return new Score_Depth(relGoal,level,getRank(state),((OptimalPropNet)getStateMachine()).getHeuristic(state));
-			return new Score_Depth(0,level,-1,((OptimalPropNet)getStateMachine()).getHeuristic(state));
+			if (relGoal<0) return new Score_Depth(relGoal,level,getRank(state),getStateMachine().getHeuristic(state));
+			if(relGoal>0) return new Score_Depth(relGoal,level,getRank(state),getStateMachine().getHeuristic(state));
+			return new Score_Depth(0,level,-1,getStateMachine().getHeuristic(state));
 			//getStateMachine().getGoal(state, getRole());
 		}
 		//if(stopExpanding(state, level, timeout)) {
@@ -283,7 +282,7 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 			//return getHeuristicPOST(state, timeout); 
 			_levelcount++;
 			//	System.out.println("level: " +level + " count: "+_levelcount);
-			return new Score_Depth(0,level,-1,((OptimalPropNet)getStateMachine()).getHeuristic(state));
+			return new Score_Depth(0,level,-1,getStateMachine().getHeuristic(state));
 		}
 
 		List<Move> legalMoves = getStateMachine().getLegalMoves(state, getRole());
@@ -329,7 +328,7 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 			//	if(currVal==-2) continue;
 		}
 		if(validscore) return new Score_Depth(maxVal,minDepth,bestrank, best_propheur);// + ((OptimalPropNet)getStateMachine()).getHeuristic(state));
-		return new Score_Depth(0,level,-1,((OptimalPropNet)getStateMachine()).getHeuristic(state));
+		return new Score_Depth(0,level,-1,getStateMachine().getHeuristic(state));
 		//return maxVal;
 	}
 
@@ -356,7 +355,7 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 			_numStatesExpanded++;
 			MachineState nextState = getStateMachine().getNextState(state, jointMove);
 			if (getStateMachine().stateIsDead(nextState)) {
-				return new Score_Depth(-1000, level, -1,((OptimalPropNet)getStateMachine()).getHeuristic(state));
+				return new Score_Depth(-1000, level, -1,getStateMachine().getHeuristic(state));
 			}
 			Score_Depth currVal = maxScorePOST(nextState, level+1, curr_time + (i+1)*time_step);
 			//if(currVal==-2)continue;
@@ -389,7 +388,7 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 
 		}
 		if(validscore) return new Score_Depth(minVal,maxDepth,worstrank, worst_propheur);
-		return new Score_Depth(0,level,-1, ((OptimalPropNet)getStateMachine()).getHeuristic(state));
+		return new Score_Depth(0,level,-1, getStateMachine().getHeuristic(state));
 		//return minVal;
 	}
 

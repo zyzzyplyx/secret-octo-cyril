@@ -28,6 +28,8 @@ public abstract class StateMachine
 	
 	public abstract boolean stateIsDead(MachineState state);
 	public abstract void deadStateRemoval(Role role);
+	public abstract double getHeuristic(MachineState state);
+	public abstract void setHeuristicValues(Role role);
 	
     public abstract void initialize(List<Gdl> description);
 

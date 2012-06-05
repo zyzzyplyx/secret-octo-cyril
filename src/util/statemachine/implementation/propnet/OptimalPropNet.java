@@ -200,6 +200,7 @@ public class OptimalPropNet extends StateMachine {
 	/**
 	 * Fetches the heuristic value generated the last time the statemachine was fed a new state.
 	 */
+	@Override
 	public double getHeuristic(MachineState state){
 		double heurs = 0;
 		clearPropNet();
@@ -615,6 +616,7 @@ public class OptimalPropNet extends StateMachine {
 		return factors.size();		
 	}
 	
+	@Override
 	public void setHeuristicValues(Role role){
 		Set<Proposition> goalProps = propNet.getGoalPropositions().get(role);
 		int bestVal = 0;

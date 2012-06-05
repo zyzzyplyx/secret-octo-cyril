@@ -511,6 +511,72 @@ public class SamplePropNetStateMachine extends StateMachine {
 		return factors.size();		
 	}
 
+	@Override
+	public double getHeuristic(MachineState state) {
+		double heurs = 0;
+		clearPropNet();
+		updateStateMachine(state);
+		/*
+		Map<GdlTerm, Proposition> baseMap = propNet.getBasePropositions();
+		for (GdlSentence s : state.getContents()) {
+			heurs += baseMap.get(s.toTerm()).getHeuristicValue();
+		}
+		*/
+		for(Proposition prop : propNet.getPropositions()){
+			heurs += (prop.getValue() ? prop.getHeuristicValue() : 0);
+		}
+		return heurs;
+	}
+
+	@Override
+	public void setHeuristicValues(Role role) {
+		Set<Proposition> goalProps = propNet.getGoalPropositions().get(role);
+		int bestVal = 0;
+		Proposition bestGoal = null;
+		//any goal proposition with an or gate could lead to disjunction
+		//only focus on the goal which gets us the best reward
+		for (Proposition goalProp : goalProps){
+			if(bestVal < getGoalValue(goalProp)){
+				bestVal = getGoalValue(goalProp);
+				bestGoal = goalProp;
+			}
+		}
+		//heuristicRecursion(bestGoal, ((double)getGoalValue(bestGoal)));
+		int discount = bestVal/2;
+		for(Proposition goalProp: goalProps){
+			heuristicRecursion(goalProp, ((double)getGoalValue(goalProp))-discount);		
+		}
+		/*
+		for(Proposition root : propNet.getPropositions())
+			if(root.getHeuristicValue() != 0)
+				System.out.println("set "+((Proposition)root).getName()+" to: "+root.getHeuristicValue());
+		*/
+		
+	}
+
+	private void heuristicRecursion(Component root, double val){
+		if(root instanceof util.propnet.architecture.components.Transition){
+			return;
+		}
+		if(root instanceof Proposition){
+			root.setHeuristicValue(val + root.getHeuristicValue());
+		}
+		Set<Component> inputs = root.getInputs();
+		for(Component in : inputs){
+			if(in instanceof util.propnet.architecture.components.Or){
+				heuristicRecursion(in, val/2/inputs.size());
+			}
+			else if(in instanceof util.propnet.architecture.components.And){
+				heuristicRecursion(in, val);
+			}
+			else if(in instanceof util.propnet.architecture.components.Not){
+				heuristicRecursion(in, -val);
+			}
+			else{
+				heuristicRecursion(in, val/inputs.size());
+			}
+		}		
+	}
 
 	public void printf(String string) {
 		System.out.println(string);
