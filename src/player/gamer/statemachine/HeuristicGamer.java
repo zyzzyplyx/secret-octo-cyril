@@ -76,7 +76,7 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 			throws TransitionDefinitionException, MoveDefinitionException,
 			GoalDefinitionException {
 		/* ***************NOT DOING METAGAMING YET************************/
-		//((OptimalPropNet) getStateMachine()).factorDisjunctiveGoalStates(getRole());
+		getStateMachine().factorDisjunctiveGoalStates(getRole());
 		getStateMachine().setHeuristicValues(getRole());
 		getStateMachine().deadStateRemoval(getRole());
 		//System.out.println(getStateMachine().getInitialState());
