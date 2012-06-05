@@ -49,6 +49,7 @@ public class SamplePropNetStateMachine extends StateMachine {
     Map<Component, Set<Proposition>> factorLegalsMap;
     LinkedList<Component> goalOrdering;
     Set<Proposition> selectedLegals;
+    Set<Proposition> deadStates = new HashSet<Proposition>();
     
     private MachineState initialState;
     private MachineState currentState;
@@ -508,4 +509,217 @@ public class SamplePropNetStateMachine extends StateMachine {
 		
 		return factors.size();		
 	}
+	
+	
+	public void printf(String string) {
+		System.out.println(string);
+	}
+
+	public class AuxNode {
+		public AuxNode() {}
+		public AuxNode(Proposition prop, boolean mark) {
+			this.proposition = prop;
+			this.mark = mark;
+			this.next = new ArrayList<AuxNode>();
+		}
+
+		public boolean equals(AuxNode node) {
+			return this.proposition.equals(node.proposition) && this.mark == node.mark;
+		}
+
+
+		public Proposition proposition;
+		public boolean mark;
+		public List<AuxNode> next;
+	}
+
+	/*
+	 * Returns whether or not list contains node. If remove is true, then node will be removed from list if it is contained in it.
+	 */
+	public boolean listContainsNode(List<AuxNode> list, AuxNode node, boolean remove) {
+		for (AuxNode auxNode : list) {
+			if (auxNode.equals(node)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/*
+	 * Finds a cycle
+	 */
+	public boolean findCycle(AuxNode node, List<AuxNode> nextNodes, List<AuxNode> cycleNodes, List<AuxNode> allCheckedNodes) {
+		for (AuxNode nextNode : nextNodes) {
+			if (node.equals(nextNode)) {
+				return true;
+			}
+			if (!listContainsNode(allCheckedNodes, nextNode, false) && !listContainsNode(cycleNodes, nextNode, false)) {
+				allCheckedNodes.add(nextNode);
+				cycleNodes.add(nextNode);
+				if (findCycle(node, nextNode.next, cycleNodes, allCheckedNodes)) {
+					return true;
+				}
+				cycleNodes.remove(nextNode);
+			}
+		}
+		return false;
+	}
+
+	public boolean findGoal(AuxNode goal, List<AuxNode> nextNodes, List<AuxNode> checkedNodes) {
+		for (AuxNode nextNode : nextNodes) {
+			if (nextNode.proposition.equals(goal.proposition)) {
+				return true;
+			}
+			if (!listContainsNode(checkedNodes, nextNode, false)) {
+				checkedNodes.add(nextNode);
+				if (findGoal(goal, nextNode.next, checkedNodes)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	public void findLatchInhibiters(List<AuxNode> auxGraph, Role role) {
+		List<Proposition> goodGoals = new ArrayList<Proposition>();
+		List<Proposition> badGoals = new ArrayList<Proposition>();
+		for (Proposition goal : propNet.getGoalPropositions().get(role)) {
+			if (getGoalValue(goal) == 100) {
+				goodGoals.add(goal);
+			} else if (getGoalValue(goal) == 0) {
+				badGoals.add(goal);
+			}
+		}
+
+		//Find latches
+		for (AuxNode node : auxGraph) {
+			if (node.mark) {
+				List<AuxNode> cycleNodes = new ArrayList<AuxNode>();
+				cycleNodes.add(node);
+				List<AuxNode> allCheckedNodes = new ArrayList<AuxNode>();
+				allCheckedNodes.add(node);
+				if (findCycle(node, node.next, cycleNodes, allCheckedNodes)) {
+					int numBaseProps = 0;
+					for (AuxNode cycleNode : cycleNodes) {
+						if (propNet.getBasePropositions().values().contains(cycleNode.proposition)) {
+							numBaseProps++;
+							if (numBaseProps > 1) {
+								break;
+							}
+						}
+					}
+					if (numBaseProps == 1) {
+						//Determine if latch is inhibiter
+						for (Proposition goal : goodGoals) {
+							List<AuxNode> checkedNodes = new ArrayList<AuxNode>();
+							checkedNodes.add(node);
+							if (findGoal(new AuxNode(goal, false), node.next, checkedNodes)) {
+								printf("Found path to good goal from " + node.proposition.toString() + node.mark);
+								deadStates.add(node.proposition);
+							}
+						}
+
+						for (Proposition goal : badGoals) {
+							List<AuxNode> checkedNodes = new ArrayList<AuxNode>();
+							checkedNodes.add(node);
+							if (findGoal(new AuxNode(goal, true), node.next, checkedNodes)) {
+								printf("Found path to bad goal from " + node.proposition.toString() + node.mark);
+								deadStates.add(node.proposition);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	public void addNextProposition(AuxNode node, boolean inputMark, Component gate, Map<Proposition, AuxNode> trueNodes, Map<Proposition, AuxNode> falseNodes) {			
+		for (Component output : gate.getOutputs()) {
+			if (output instanceof Proposition) {
+				if (inputMark) {
+					node.next.add(trueNodes.get(output));
+				} else {
+					node.next.add(falseNodes.get(output));
+				}
+			} else if (output instanceof util.propnet.architecture.components.Not) {
+				addNextProposition(node, !inputMark, output, trueNodes, falseNodes);
+			} else if (output instanceof util.propnet.architecture.components.Or) {
+				if (inputMark) {
+					addNextProposition(node, inputMark, output, trueNodes, falseNodes);
+				}
+			} else if (output instanceof util.propnet.architecture.components.And) {
+				if (!inputMark) {
+					addNextProposition(node, inputMark, output, trueNodes, falseNodes);
+				}
+			} else {
+				addNextProposition(node, inputMark, output, trueNodes, falseNodes);
+			}
+		}
+	}
+
+	@Override
+	public void deadStateRemoval(Role role) {
+		List<AuxNode> auxGraph = new ArrayList<AuxNode>();
+		Map<Proposition, AuxNode> trueNodes = new HashMap<Proposition, AuxNode>();
+		Map<Proposition, AuxNode> falseNodes = new HashMap<Proposition, AuxNode>();
+
+		//Add a marked and unmarked node for each proposition into graph
+		for (Proposition prop : propNet.getBasePropositions().values()) {
+			AuxNode trueNode = new AuxNode(prop, true);
+			auxGraph.add(trueNode);
+			trueNodes.put(prop, trueNode);
+
+			AuxNode falseNode = new AuxNode(prop, false);
+			auxGraph.add(falseNode);
+			falseNodes.put(prop, falseNode);
+		}
+		for (Proposition prop : ordering) {
+			AuxNode trueNode = new AuxNode(prop, true);
+			auxGraph.add(trueNode);
+			trueNodes.put(prop, trueNode);
+
+			AuxNode falseNode = new AuxNode(prop, false);
+			auxGraph.add(falseNode);
+			falseNodes.put(prop, falseNode);
+		}
+
+		printf("Size of graph: " + auxGraph.size());
+
+		for (int i = 0; i < trueNodes.size(); i++) {
+			//Propagate truth values of marked nodes
+			AuxNode markedNode = auxGraph.get(2*i);	
+			AuxNode unmarkedNode = auxGraph.get(2*i + 1);
+			for (Component output : markedNode.proposition.getOutputs()) {
+				if (output instanceof Proposition) {
+					markedNode.next.add(trueNodes.get(output));
+					unmarkedNode.next.add(falseNodes.get(output));
+				} else if (output instanceof util.propnet.architecture.components.Not) {
+					addNextProposition(markedNode, false, output, trueNodes, falseNodes);
+					addNextProposition(unmarkedNode, true, output, trueNodes, falseNodes);
+				} else if (output instanceof util.propnet.architecture.components.Or) {
+					addNextProposition(markedNode, true, output, trueNodes, falseNodes);
+				} else if (output instanceof util.propnet.architecture.components.And) {
+					addNextProposition(unmarkedNode, false, output, trueNodes, falseNodes);
+				} else {
+					addNextProposition(markedNode, true, output, trueNodes, falseNodes);
+					addNextProposition(unmarkedNode, false, output, trueNodes, falseNodes);
+				}
+			}
+		}
+
+		findLatchInhibiters(auxGraph, role);
+		printf("dead state removal complete!");
+	}
+
+	@Override
+	public boolean stateIsDead(MachineState state) {
+		Map<GdlTerm, Proposition> baseMap = propNet.getBasePropositions();
+		for (GdlSentence s : state.getContents()) {
+			if (deadStates.contains(baseMap.get(s.toTerm()))) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 }

@@ -109,6 +109,17 @@ public class TheEliminator extends HeuristicGamer {
 		_levelsToExpand = 10000;
 		List<Score_Depth> quickMiniMax = getMovePOST(getCurrentState(), timeout - (timeout-curr_time)/2, legalMoves);
 
+		/**
+		 * Dead state removal
+		 */
+		for (int i = 0; i < quickMiniMax.size(); i++) {
+			if (quickMiniMax.get(i).score == -1000) {
+				Eliminated.set(i, true);
+			} else {
+				Eliminated.set(i, false);
+			}
+		}
+		
 		double overtime = (System.currentTimeMillis()-(timeout - (timeout-curr_time)/2));///(timeout - (timeout-curr_time)/2);
 		System.out.println("OVERTIME FRACTION"+overtime);
 		for(int i = 0; i<quickMiniMax.size(); i++){
