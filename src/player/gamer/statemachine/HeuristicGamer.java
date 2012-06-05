@@ -86,7 +86,7 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 			throws TransitionDefinitionException, MoveDefinitionException,
 			GoalDefinitionException {
 
-		_stopTime = timeout - CALCULATION_BUFFER;
+		_stopTime = timeout - CALCULATION_BUFFER*4;
 		_numStatesExpanded = 0;
 
 		long currTime = System.currentTimeMillis();
@@ -266,7 +266,7 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 		if(getStateMachine().isTerminal(state)){ //base case 
 			//System.out.println("terminal");
 			double relGoal = getRelGoal(state);
-			System.out.println("TERMINAL: " +level + " goal: "+relGoal);
+			//System.out.println("TERMINAL: " +level + " goal: "+relGoal);
 
 			//if (relGoal<0) return new Score_Depth(-101,level);
 			//if(relGoal>0) return new Score_Depth(101,level);
@@ -276,11 +276,11 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 			//getStateMachine().getGoal(state, getRole());
 		}
 		//if(stopExpanding(state, level, timeout)) {
-		if(level > _levelsToExpand || System.currentTimeMillis() > timeout){
+		if(level > _levelsToExpand || System.currentTimeMillis() > timeout){ //PLEASE ADD CALC BUFFER HERE
 			//System.out.println("heuristic");
 			//return getHeuristicPOST(state, timeout); 
 			_levelcount++;
-				System.out.println("level: " +level + " count: "+_levelcount);
+				//System.out.println("level: " +level + " count: "+_levelcount);
 			return new Score_Depth(0,level,-1,((OptimalPropNet)getStateMachine()).getHeuristic(state));
 		}
 
