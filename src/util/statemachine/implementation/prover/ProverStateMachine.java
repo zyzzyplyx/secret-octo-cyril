@@ -35,11 +35,12 @@ public class ProverStateMachine extends StateMachine
 		
 	}
 	
-	public void initialize(List<Gdl> description)
+	public StateMachine initialize(List<Gdl> description)
 	{
 		prover = new AimaProver(new HashSet<Gdl>(description));
 		roles = Role.computeRoles(description);
 		initialState = computeInitialState();
+		return this;
 	}
 
 	private MachineState computeInitialState()
@@ -127,6 +128,18 @@ public class ProverStateMachine extends StateMachine
 
 	@Override
 	public void deadStateRemoval(Role role) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public double getHeuristic(MachineState state) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public void setHeuristicValues(Role role) {
 		// TODO Auto-generated method stub
 		
 	}

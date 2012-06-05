@@ -31,7 +31,7 @@ public abstract class StateMachine
 	public abstract double getHeuristic(MachineState state);
 	public abstract void setHeuristicValues(Role role);
 	
-    public abstract void initialize(List<Gdl> description);
+    public abstract StateMachine initialize(List<Gdl> description);
 
     public abstract int getGoal(MachineState state, Role role) throws GoalDefinitionException;
     public abstract boolean isTerminal(MachineState state);

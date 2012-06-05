@@ -136,7 +136,7 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 				bestscore = score;
 			}
 		}
-		System.out.println("index:" + indexOfBestScore);
+		//System.out.println("index:" + indexOfBestScore);
 
 
 
@@ -265,7 +265,7 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 		if(getStateMachine().isTerminal(state)){ //base case 
 			//System.out.println("terminal");
 			double relGoal = getRelGoal(state);
-			System.out.println("TERMINAL: " +level + " goal: "+relGoal);
+			//System.out.println("TERMINAL: " +level + " goal: "+relGoal);
 
 			//if (relGoal<0) return new Score_Depth(-101,level);
 			//if(relGoal>0) return new Score_Depth(101,level);
@@ -280,7 +280,7 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 			//return getHeuristicPOST(state, timeout); 
 			_levelcount++;
 
-			System.out.println("level: " +level + " count: "+_levelcount);
+			//System.out.println("level: " +level + " count: "+_levelcount);
 			return new Score_Depth(0,level,-1,getStateMachine().getHeuristic(state));
 
 		}

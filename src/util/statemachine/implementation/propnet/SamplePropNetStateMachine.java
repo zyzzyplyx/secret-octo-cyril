@@ -60,7 +60,7 @@ public class SamplePropNetStateMachine extends StateMachine {
 	 * your discretion.
 	 */
 	@Override
-	public void initialize(List<Gdl> description) {
+	public StateMachine initialize(List<Gdl> description) {
 		try {
 			propNet = OptimizingPropNetFactory.create(description);
 		} catch (InterruptedException e) {
@@ -72,6 +72,7 @@ public class SamplePropNetStateMachine extends StateMachine {
 		propNet.renderToFile("graph.dot");
 		//  System.out.println("order: "+ordering.toString());
 		// System.out.println("initState: "+initialState.toString());
+		return this;
 	}    
 
 	private MachineState computeInitialState()

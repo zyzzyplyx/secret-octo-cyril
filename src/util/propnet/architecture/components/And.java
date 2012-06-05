@@ -40,9 +40,9 @@ public final class And extends Component
 	public String getCompileString() {
 		String retStr = "(";//"b["+bitIndex+"] =";
 		for(Component c : this.getInputs()){
-			retStr += c.getCompileString()+" && ";
+			retStr += c.getCompileString()+"&&";
 		}
-		retStr = retStr.substring(0, retStr.length()-4) + ")"; // AND  "+this.getInputs().toString();
+		retStr = retStr.substring(0, retStr.length()-2) + ")"; // AND  "+this.getInputs().toString();
 		return retStr;
 	}
 

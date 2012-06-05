@@ -37,6 +37,7 @@ import util.statemachine.StateMachine;
 import util.statemachine.exceptions.GoalDefinitionException;
 import util.statemachine.exceptions.MoveDefinitionException;
 import util.statemachine.exceptions.TransitionDefinitionException;
+import util.statemachine.implementation.propnet.SamplePropNetStateMachine.AuxNode;
 import util.statemachine.implementation.prover.query.ProverQueryBuilder;
 import util.statemachine.implementation.prover.result.ProverResultParser;
 
@@ -49,15 +50,20 @@ public class OptimalPropNet extends StateMachine {
     private List<Role> roles;
     /**The factors of this game, with their goal states as keys*/
     Map<Component, Set<Component>> factors;
-    Map<Component, Set<Proposition>> factorLegalsMap;
+    Map<Component, Set<Integer>> factorLegalsMap;
     LinkedList<Component> goalOrdering;
-    Set<Proposition> selectedLegals;
     
     private MachineState initialState;
     private MachineState currentState;
     private PropCode propCode;
     private boolean[] boolState;
-    private BitSet bitState;
+    //private int heurs;
+    private Map<Integer, GdlSentence> transMap;
+    private Map<Integer, Double> heuristicMap;
+    private Map<Role, Map<Integer, Move>> moveMap;
+    
+	Set<Proposition> latches = new HashSet<Proposition>();
+	Set<Proposition> falseLatches = new HashSet<Proposition>();
     
     /**
      * Initializes the PropNetStateMachine. You should compute the topological
@@ -65,7 +71,7 @@ public class OptimalPropNet extends StateMachine {
      * your discretion.
      */
     @Override
-    public void initialize(List<Gdl> description) {
+    public StateMachine initialize(List<Gdl> description) {
         try {
 			propNet = OptimizingPropNetFactory.create(description);
 		} catch (InterruptedException e) {
@@ -73,11 +79,32 @@ public class OptimalPropNet extends StateMachine {
 		}
         roles = propNet.getRoles();
         ordering = getOrdering();
+        if(ordering == null){
+        	System.out.println("bailing out");
+        	StateMachine sample = new SamplePropNetStateMachine();
+        	sample.initialize(description);
+        	return sample;
+        }
+        moveMap = makeMoveMap();
         initialState = computeInitialState();
-        propNet.renderToFile("graph.dot");
+        //propNet.renderToFile("graph.dot");
         //System.out.println("order: "+ordering.toString());
         System.out.println("initState: "+initialState.toString());
+        return this;
     }    
+    
+    private Map<Role, Map<Integer, Move>> makeMoveMap(){
+    	Map<Role, Map<Integer, Move>> mm = new HashMap<Role, Map<Integer, Move>>();
+    	for(Role r : propNet.getRoles()){
+    		Map<Integer, Move> indMap = new HashMap<Integer, Move>();
+    		Set<Proposition> legalProp = propNet.getLegalPropositions().get(r);
+			for(Proposition prop : legalProp){	
+				indMap.put(prop.bitIndex, getMoveFromProposition(prop));
+			}
+			mm.put(r, indMap);
+    	}
+    	return mm;
+    }
     
     private MachineState computeInitialState()
 	{
@@ -147,14 +174,13 @@ public class OptimalPropNet extends StateMachine {
 			clearPropNet();
 			updateStateMachine(state);
 		}
-		Set<Proposition> factorLegals = factorLegalsMap.get(factorKey);
+		Set<Integer> factorLegals = factorLegalsMap.get(factorKey);
 		//just check propositions corresponding to all possible moves for role
 		//move is legal if the proposition is true
-		Set<Proposition> legalProp = propNet.getLegalPropositions().get(role);
 		List<Move> moves = new ArrayList<Move>();
-		for(Proposition prop : legalProp){	
-			if(boolState[prop.bitIndex]&&factorLegals.contains(prop))
-				moves.add(getMoveFromProposition(prop));
+		Map<Integer, Move> moveInd = moveMap.get(role);
+		for(int i : moveInd.keySet()){	
+			if(boolState[i] && factorLegals.contains(i)) moves.add(moveInd.get(i));
 		}
 		/*
 		if(moves.size() == 0){
@@ -182,9 +208,9 @@ public class OptimalPropNet extends StateMachine {
 				clearPropNet();
 				updateStateMachine(state);
 			}
-			Set<Proposition> legalProp = propNet.getLegalPropositions().get(role);
-			for(Proposition prop : legalProp){	
-				if(boolState[prop.bitIndex])	moves.add(getMoveFromProposition(prop));
+			Map<Integer, Move> moveInd = moveMap.get(role);
+			for(int i : moveInd.keySet()){	
+				if(boolState[i]) moves.add(moveInd.get(i));
 			}
 			return moves;
 		}
@@ -203,16 +229,12 @@ public class OptimalPropNet extends StateMachine {
 	@Override
 	public double getHeuristic(MachineState state){
 		double heurs = 0;
-		clearPropNet();
-		updateStateMachine(state);
-		/*
-		Map<GdlTerm, Proposition> baseMap = propNet.getBasePropositions();
-		for (GdlSentence s : state.getContents()) {
-			heurs += baseMap.get(s.toTerm()).getHeuristicValue();
+		if(!state.equals(currentState)){
+			clearPropNet();
+			updateStateMachine(state);
 		}
-		*/
-		for(Proposition prop : propNet.getPropositions()){
-			heurs += (boolState[prop.bitIndex]? prop.getHeuristicValue() : 0);
+		for(int i : heuristicMap.keySet()){
+			heurs += (boolState[i]? heuristicMap.get(i):0);
 		}
 		return heurs;
 	}
@@ -240,9 +262,9 @@ public class OptimalPropNet extends StateMachine {
     private MachineState updateStateMachine(MachineState state) {
     	//System.out.println("------------------------------------------------------------------------------------------");
 		//map the state to base propositions
-		Map<GdlTerm, Proposition> baseMap = propNet.getBasePropositions();
+		Map<GdlTerm, Proposition> bases = propNet.getBasePropositions();
 		for (GdlSentence s : state.getContents()) {
-			boolState[baseMap.get(s.toTerm()).bitIndex] = true;
+			boolState[bases.get(s.toTerm()).bitIndex] = true;
 		}
 		boolState = propCode.setPropNet(boolState);
     	currentState = state;
@@ -266,13 +288,11 @@ public class OptimalPropNet extends StateMachine {
 	public List<Component> getOrdering()
 	{
 		  try {
-		   int classCounter = 0;
 		   FileOutputStream fout = new FileOutputStream("src/boolCode/boolPropNet.java");
 		   fout.write(("package boolCode;" +
-		   				"import boolCode.boolPropNet"+classCounter+";\n" +
 		   				"public class boolPropNet implements util.propnet.architecture.PropCode {\n\n" +
-				   		"   public boolPropNet(){}\n\n"+
-		                "   public boolean[] setPropNet(boolean[] b){\n").getBytes());
+				   		"public boolPropNet(){}\n\n"+
+		                "public boolean[] setPropNet(boolean[] b){\n").getBytes());
 		  // List to contain the topological ordering.
 	       List<Component> order = new LinkedList<Component>();
 	       List<Proposition> orderFinal = new LinkedList<Proposition>();
@@ -284,6 +304,7 @@ public class OptimalPropNet extends StateMachine {
 	       int numToSolve = propNet.getPropositions().size() - solved.size() + propNet.getBasePropositions().size();// +propNet.getInputPropositions().size();//all propositions and transitions
 	       
 	       int bitCounter = 0;
+	       int byteCounter = 0;
 	       int methodCounter = 0;
 	       for(Component c : solved){
 	    	   c.bitIndex = bitCounter;
@@ -310,63 +331,29 @@ public class OptimalPropNet extends StateMachine {
                 		   else{
                 			   comp.bitIndex = bitCounter;
 		                	   bitCounter++;
-		                	   if(bitCounter%1000 == 0){
+		                	   byteCounter += comp.getInputs().size() * 16;
+		                	   if(byteCounter > 15000){
 		                		   methodCounter++;
-		                		   if(methodCounter%100 == 0){
-		                			   fout.write(("		boolPropNet"+classCounter+".setPropNet(b);\n"+
-		                					   		"		return b;\n		}\n}").getBytes());
-		                			   fout.close();
-		                			   fout = new FileOutputStream("src/boolCode/boolPropNet"+classCounter+".java");
-		                			   classCounter++;
-		                			   fout.write(("package boolCode;" +
-		                			   				"import boolCode.boolPropNet"+classCounter+";\n"+
-		                					   		"public class boolPropNet"+(classCounter-1)+" implements util.propnet.architecture.PropCode {\n\n" +
-		                					   		"   public boolPropNet"+(classCounter-1)+"(){}\n\n"+
-		                			                "   public boolean[] setPropNet(boolean[] b){\n").getBytes());
-		                		   }
-		                		   fout.write(("\n        b = set"+bitCounter+"(b);\n"+
-		                				   	  "		return b;\n }\n"+
-		                				   	  "	private boolean[] set"+bitCounter+"(boolean[] b){\n").getBytes());
+		                		   if(methodCounter > 250) return null;
+		                		   byteCounter = comp.getInputs().size() * 16;
+		                		   fout.write(("\n b=set"+bitCounter+"(b);"+
+		                				   	  "return b;\n}\n"+
+		                				   	  "private boolean[] set"+bitCounter+"(boolean[] b){\n").getBytes());
 		                	   }
-		                	   fout.write(("		"+comp.getEvalExp()+"\n").getBytes());
+		                	   fout.write((comp.getEvalExp()).getBytes());
 	                	   }
 	                   }
 	               }
 	           }
 	           solved.addAll(nowSolved);
 	       }
-	       /*
-	       for (Proposition proposition : order) {
-				if (proposition.getSingleInput().toString().contains("TRUE")) {
-					proposition.setValue(true);
-					propNet.getPropositions().remove(proposition);
-				} else {
-					orderFinal.add(proposition);
-				}
-			}
-			
-	       for(Component c : propNet.getComponents()){
-	    	   if(c.bitIndex == -1) System.out.println(c.toString()+" with inputs: "+c.getInputs().toString()+" was not reached");
-	       }*/
-	       
-	       //orderFinal = order;
 	        
 	       System.out.println("\n---------------------\n\n"+propNet.getComponents().size()+"\n------------------------\n");
 	       
 	       //-----------------COMPILATION-------------------//
-	       fout.write(("		return b;\n		}\n}").getBytes());
+	       fout.write(("return b;\n}\n}").getBytes());
 		   fout.close();
-		   fout = new FileOutputStream("src/boolCode/boolPropNet"+classCounter+".java");
-		   fout.write(("package boolCode;" +
-		   				"public class boolPropNet"+classCounter+" implements util.propnet.architecture.PropCode {\n\n" +
-				   		"   public boolPropNet"+classCounter+"(){}\n\n"+
-		                "   public boolean[] setPropNet(boolean[] b){return b;}}").getBytes());
-            fout.close();
             JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-            for(int i = classCounter; i >= 0; i--){
-            	int compilationResult = compiler.run(null, null, null, "src/boolCode/boolPropNet"+i+".java");
-            	System.out.println("compiled: "+i);
-            }
             int compilationResult = compiler.run(null, null, null, "src/boolCode/boolPropNet.java");
             if(compilationResult == 0){
                 System.out.println("Compilation is successful");
@@ -390,6 +377,11 @@ public class OptimalPropNet extends StateMachine {
                 ex.printStackTrace();
             }
             //------------------END COMPILATION---------------//
+            transMap = new HashMap<Integer, GdlSentence>();
+            for(Proposition p : propNet.getBasePropositions().values()){
+            	transMap.put(p.getSingleInput().bitIndex, p.getName().toSentence());
+            }
+            
             
 	        return order;
 		    
@@ -463,11 +455,9 @@ public class OptimalPropNet extends StateMachine {
 	public MachineState getStateFromBase()
 	{
 		Set<GdlSentence> contents = new HashSet<GdlSentence>();
-		for (Proposition p : propNet.getBasePropositions().values())
+		for (int i : transMap.keySet())
 		{
-			p.setValue(boolState[p.getSingleInput().bitIndex]);
-			if (p.getValue()) //should have a dynamic method to set this.
-				contents.add(p.getName().toSentence());
+			if (boolState[i])contents.add(transMap.get(i));
 		}
 		return new MachineState(contents);
 	}
@@ -577,7 +567,7 @@ public class OptimalPropNet extends StateMachine {
 		System.out.println(factors.size());
 		if(factors.size() > 1){
 			goalOrdering = new LinkedList<Component>();
-			factorLegalsMap = new HashMap<Component, Set<Proposition>>();
+			factorLegalsMap = new HashMap<Component, Set<Integer>>();
 			for(Component key: factors.keySet()){
 				//put the goals in order of complexity
 				if(goalOrdering.size() == 0){
@@ -592,19 +582,15 @@ public class OptimalPropNet extends StateMachine {
 					if(!goalOrdering.contains(key)) goalOrdering.addLast(key);
 				}					
 				
-				Set<Proposition> factorLegals = new HashSet<Proposition>();
+				Set<Integer> factorLegals = new HashSet<Integer>();
 				for(Component comp : factors.get(key)){
 					if(propNet.getLegalInputMap().containsKey(comp)){
-						factorLegals.add(propNet.getLegalInputMap().get(comp));
+						factorLegals.add(propNet.getLegalInputMap().get(comp).bitIndex);
 					}
 				}
 				factorLegalsMap.put(key, factorLegals);
 			}
 			fout.println("goalOrdering: "+goalOrdering.toString());
-			selectedLegals = factorLegalsMap.get(goalOrdering.get(0));
-	
-			fout.print("legals: ");
-			fout.println(selectedLegals);
 		}
 		
 		fout.close();
@@ -618,6 +604,7 @@ public class OptimalPropNet extends StateMachine {
 	
 	@Override
 	public void setHeuristicValues(Role role){
+		heuristicMap = new HashMap<Integer, Double>();
 		Set<Proposition> goalProps = propNet.getGoalPropositions().get(role);
 		int bestVal = 0;
 		Proposition bestGoal = null;
@@ -634,11 +621,6 @@ public class OptimalPropNet extends StateMachine {
 		for(Proposition goalProp: goalProps){
 			heuristicRecursion(goalProp, ((double)getGoalValue(goalProp))-discount);		
 		}
-		/*
-		for(Proposition root : propNet.getPropositions())
-			if(root.getHeuristicValue() != 0)
-				System.out.println("set "+((Proposition)root).getName()+" to: "+root.getHeuristicValue());
-		*/
 	}
 	
 	private void heuristicRecursion(Component root, double val){
@@ -646,7 +628,10 @@ public class OptimalPropNet extends StateMachine {
 			return;
 		}
 		if(root instanceof Proposition){
-			root.setHeuristicValue(val + root.getHeuristicValue());
+			if(heuristicMap.containsKey(root.bitIndex)){
+				heuristicMap.put(root.bitIndex, heuristicMap.get(root.bitIndex) + val);
+			}
+			else heuristicMap.put(root.bitIndex, val);
 		}
 		Set<Component> inputs = root.getInputs();
 		for(Component in : inputs){
@@ -665,15 +650,236 @@ public class OptimalPropNet extends StateMachine {
 		}		
 	}
 
-	@Override
-	public boolean stateIsDead(MachineState state) {
-		// TODO Auto-generated method stub
+	public class AuxNode {
+		public AuxNode() {}
+		public AuxNode(Proposition prop, boolean mark) {
+			this.proposition = prop;
+			this.mark = mark;
+			this.next = new ArrayList<AuxNode>();
+		}
+
+		public boolean equals(AuxNode node) {
+			return this.proposition.equals(node.proposition) && this.mark == node.mark;
+		}
+
+
+		public Proposition proposition;
+		public boolean mark;
+		public List<AuxNode> next;
+	}
+
+	/*
+	 * Returns whether or not list contains node. If remove is true, then node will be removed from list if it is contained in it.
+	 */
+	private boolean listContainsNode(List<AuxNode> list, AuxNode node, boolean remove) {
+		for (AuxNode auxNode : list) {
+			if (auxNode.equals(node)) {
+				return true;
+			}
+		}
 		return false;
+	}
+
+	/*
+	 * Finds a cycle
+	 */
+	private boolean findCycle(AuxNode node, List<AuxNode> nextNodes, List<AuxNode> cycleNodes, List<AuxNode> allCheckedNodes) {
+		for (AuxNode nextNode : nextNodes) {
+			if (node.equals(nextNode)) {
+				return true;
+			}
+			if (!listContainsNode(allCheckedNodes, nextNode, false) && !listContainsNode(cycleNodes, nextNode, false)) {
+				allCheckedNodes.add(nextNode);
+				cycleNodes.add(nextNode);
+				if (findCycle(node, nextNode.next, cycleNodes, allCheckedNodes)) {
+					return true;
+				}
+				cycleNodes.remove(nextNode);
+			}
+		}
+		return false;
+	}
+
+	private boolean findGoal(AuxNode goal, List<AuxNode> nextNodes, List<AuxNode> checkedNodes) {
+		for (AuxNode nextNode : nextNodes) {
+			if (nextNode.proposition.equals(goal.proposition)) {
+				return true;
+			}
+			if (!listContainsNode(checkedNodes, nextNode, false)) {
+				checkedNodes.add(nextNode);
+				if (findGoal(goal, nextNode.next, checkedNodes)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	private void findLatchInhibiters(List<AuxNode> auxGraph, Role role) {
+		List<Proposition> goodGoals = new ArrayList<Proposition>();
+		List<Proposition> badGoals = new ArrayList<Proposition>();
+		for (Proposition goal : propNet.getGoalPropositions().get(role)) {
+			if (getGoalValue(goal) == 100) {
+				goodGoals.add(goal);
+			} else if (getGoalValue(goal) == 0) {
+				badGoals.add(goal);
+			}
+		}
+
+		//Find latches
+		for (AuxNode node : auxGraph) {
+			List<AuxNode> cycleNodes = new ArrayList<AuxNode>();
+			cycleNodes.add(node);
+			List<AuxNode> allCheckedNodes = new ArrayList<AuxNode>();
+			allCheckedNodes.add(node);
+			if (findCycle(node, node.next, cycleNodes, allCheckedNodes)) {
+				int numBaseProps = 0;
+				for (AuxNode cycleNode : cycleNodes) {
+					if (propNet.getBasePropositions().values().contains(cycleNode.proposition)) {
+						numBaseProps++;
+						if (numBaseProps > 1) {
+							break;
+						}
+					}
+				}
+				if (numBaseProps == 1) {
+					//Determine if latch is inhibiter
+					for (Proposition goodGoal : goodGoals) {
+						List<AuxNode> checkedNodes = new ArrayList<AuxNode>();
+						checkedNodes.add(node);
+						if (findGoal(new AuxNode(goodGoal, false), node.next, checkedNodes)) {
+							if (node.mark) {
+								printf(node.mark + node.proposition.toString() + "Inhibts " + goodGoal.toString());
+								latches.add(node.proposition);
+							} else {
+								printf(node.mark + node.proposition.toString() + "implies " + goodGoal.toString());
+								falseLatches.add(node.proposition);
+							}
+
+						}
+					}
+
+					for (Proposition badGoal : badGoals) {
+						List<AuxNode> checkedNodes = new ArrayList<AuxNode>();
+						checkedNodes.add(node);
+						if (findGoal(new AuxNode(badGoal, true), node.next, checkedNodes)) {
+							if (node.mark) {
+								printf(node.mark + node.proposition.toString() + "Is a requirement for " + badGoal.toString());
+								latches.add(node.proposition);
+							} else {
+								printf(node.mark + node.proposition.toString() + "Is an antirequirement " + badGoal.toString());
+								falseLatches.add(node.proposition);
+							}
+
+						}
+					}
+				}
+			}
+		}
+	}
+
+	private void addNextProposition(AuxNode node, boolean inputMark, Component gate, Map<Proposition, AuxNode> trueNodes, Map<Proposition, AuxNode> falseNodes) {			
+		for (Component output : gate.getOutputs()) {
+			if (output instanceof Proposition) {
+				if (inputMark) {
+					node.next.add(trueNodes.get(output));
+				} else {
+					node.next.add(falseNodes.get(output));
+				}
+			} else if (output instanceof util.propnet.architecture.components.Not) {
+				addNextProposition(node, !inputMark, output, trueNodes, falseNodes);
+			} else if (output instanceof util.propnet.architecture.components.Or) {
+				if (inputMark) {
+					addNextProposition(node, inputMark, output, trueNodes, falseNodes);
+				}
+			} else if (output instanceof util.propnet.architecture.components.And) {
+				if (!inputMark) {
+					addNextProposition(node, inputMark, output, trueNodes, falseNodes);
+				}
+			} else {
+				addNextProposition(node, inputMark, output, trueNodes, falseNodes);
+			}
+		}
 	}
 
 	@Override
 	public void deadStateRemoval(Role role) {
-		// TODO Auto-generated method stub
-		
+		List<AuxNode> auxGraph = new ArrayList<AuxNode>();
+		Map<Proposition, AuxNode> trueNodes = new HashMap<Proposition, AuxNode>();
+		Map<Proposition, AuxNode> falseNodes = new HashMap<Proposition, AuxNode>();
+
+		//Add a marked and unmarked node for each proposition into graph
+		for (Proposition prop : propNet.getBasePropositions().values()) {
+			AuxNode trueNode = new AuxNode(prop, true);
+			auxGraph.add(trueNode);
+			trueNodes.put(prop, trueNode);
+
+			AuxNode falseNode = new AuxNode(prop, false);
+			auxGraph.add(falseNode);
+			falseNodes.put(prop, falseNode);
+		}
+		for (Component c : ordering) {
+			if(c instanceof Proposition){
+				Proposition prop = (Proposition) c;
+				AuxNode trueNode = new AuxNode(prop, true);
+				auxGraph.add(trueNode);
+				trueNodes.put(prop, trueNode);
+
+				AuxNode falseNode = new AuxNode(prop, false);
+				auxGraph.add(falseNode);
+				falseNodes.put(prop, falseNode);
+			}
+
+		}
+
+		printf("Size of graph: " + auxGraph.size());
+
+		for (int i = 0; i < trueNodes.size(); i++) {
+			//Propagate truth values of marked nodes
+			AuxNode markedNode = auxGraph.get(2*i);	
+			AuxNode unmarkedNode = auxGraph.get(2*i + 1);
+			for (Component output : markedNode.proposition.getOutputs()) {
+				if (output instanceof Proposition) {
+					markedNode.next.add(trueNodes.get(output));
+					unmarkedNode.next.add(falseNodes.get(output));
+				} else if (output instanceof util.propnet.architecture.components.Not) {
+					addNextProposition(markedNode, false, output, trueNodes, falseNodes);
+					addNextProposition(unmarkedNode, true, output, trueNodes, falseNodes);
+				} else if (output instanceof util.propnet.architecture.components.Or) {
+					addNextProposition(markedNode, true, output, trueNodes, falseNodes);		
+				} else if (output instanceof util.propnet.architecture.components.And) {
+					addNextProposition(unmarkedNode, false, output, trueNodes, falseNodes);
+				} else {
+					addNextProposition(markedNode, true, output, trueNodes, falseNodes);
+					addNextProposition(unmarkedNode, false, output, trueNodes, falseNodes);
+				}
+			}
+		}
+
+		findLatchInhibiters(auxGraph, role);		
+
+		printf("dead state removal complete!");
 	}
+
+	@Override
+	public boolean stateIsDead(MachineState state) {
+		Map<GdlTerm, Proposition> baseMap = propNet.getBasePropositions();
+		for (Proposition falseLatch : falseLatches) {
+			if (!baseMap.values().contains(falseLatch)) {
+				return true;
+			}
+		}
+		for (GdlSentence s : state.getContents()) {
+			Proposition base = baseMap.get(s.toTerm());
+			if (latches.contains(base)) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	public void printf(String string) {
+		System.out.println(string);
+	}
+
 }

@@ -128,7 +128,7 @@ public class TheEliminator extends HeuristicGamer {
 
 
 		double overtime = (System.currentTimeMillis()-(timeout - (timeout-curr_time)/2));///(timeout - (timeout-curr_time)/2);
-		System.out.println("OVERTIME FRACTION"+overtime);
+		//System.out.println("OVERTIME FRACTION"+overtime);
 		for(int i = 0; i<quickMiniMax.size(); i++){
 			if(quickMiniMax.get(i).score==100){
 				List<Double> MC_Scores = new ArrayList<Double>();
@@ -276,7 +276,7 @@ public class TheEliminator extends HeuristicGamer {
 
 
 			for(int j=0; j<numMoves; j++){
-				System.out.println(quickMiniMax.get(j).propheur);
+				//System.out.println(quickMiniMax.get(j).propheur);
 				MC_Scores.set(j,quickMiniMax.get(j).propheur*(MC_Scores.get(j)));
 			}
 

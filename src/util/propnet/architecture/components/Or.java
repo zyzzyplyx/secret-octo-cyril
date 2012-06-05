@@ -40,9 +40,9 @@ public final class Or extends Component
 	public String getCompileString() {
 		String retStr = "(";
 		for(Component c : this.getInputs()){
-			retStr += c.getCompileString()+" || ";
+			retStr += c.getCompileString()+"||";
 		}
-		retStr = retStr.substring(0, retStr.length()-4) + ")"; //OR  "+this.getInputs().toString();
+		retStr = retStr.substring(0, retStr.length()-2) + ")"; //OR  "+this.getInputs().toString();
 		return retStr;
 	}
 
