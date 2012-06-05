@@ -83,6 +83,10 @@ public final class Proposition extends Component
 
 	@Override
 	public String getCompileString() {
-		return "b["+bitIndex+"] = b["+this.getSingleInput().bitIndex+"];"; //"+this.getName()+" input:"+this.getSingleInput().toString();
+		return "b["+bitIndex+"]";
+	}
+	@Override
+	public String getEvalExp(){
+		return "b["+bitIndex+"] = "+this.getSingleInput().getCompileString()+";";
 	}
 }

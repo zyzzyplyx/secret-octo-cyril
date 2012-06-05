@@ -113,13 +113,19 @@ public class TheEliminator extends HeuristicGamer {
 		 * Dead state removal
 		 */
 		for (int i = 0; i < quickMiniMax.size(); i++) {
+
+			System.out.println("Heur score "+i+": "+ quickMiniMax.get(i).propheur);
+
 			if (quickMiniMax.get(i).score == -1000) {
+				numEliminated++;
 				Eliminated.set(i, true);
 			} else {
 				Eliminated.set(i, false);
 			}
 		}
-		
+
+
+
 		double overtime = (System.currentTimeMillis()-(timeout - (timeout-curr_time)/2));///(timeout - (timeout-curr_time)/2);
 		System.out.println("OVERTIME FRACTION"+overtime);
 		for(int i = 0; i<quickMiniMax.size(); i++){
@@ -128,7 +134,7 @@ public class TheEliminator extends HeuristicGamer {
 				List<Double> MC_Scores = new ArrayList<Double>();
 				for(int j=0; j<numMoves; j++){
 					if(quickMiniMax.get(j).score==100){
-						MC_Scores.add(100.0-quickMiniMax.get(j).depth);   //POSSIBLE HEURISTIC
+						MC_Scores.add(110.0-quickMiniMax.get(j).depth);   //POSSIBLE HEURISTIC
 						//MC_Scores.add(100.0 + 1.0/(double)quickMiniMax.get(j).depth);
 					} else {
 						MC_Scores.add(0.0);
@@ -140,7 +146,7 @@ public class TheEliminator extends HeuristicGamer {
 			if(quickMiniMax.get(i).score==-100){
 				numEliminated++;
 				Eliminated.set(i, true);
-				MC_List.get(i).add(0.0);
+				MC_List.get(i).add(-105.0);
 			} else if (quickMiniMax.get(i).score!=0.0){
 				numEliminated++;
 				Eliminated.set(i, true);
@@ -238,6 +244,31 @@ public class TheEliminator extends HeuristicGamer {
 
 			}
 		}
+
+		//Normalizing propnet heuristic
+		double minscore = 1000000;
+		double maxscore = -1000000;
+		for(int j=0; j<numMoves; j++){
+			if(quickMiniMax.get(j).propheur<minscore) minscore = quickMiniMax.get(j).propheur;
+			if(quickMiniMax.get(j).propheur>maxscore) maxscore = quickMiniMax.get(j).propheur;
+		}
+		double range = maxscore - minscore;
+		if(range>=1){
+			for(int j=0; j<numMoves; j++){
+				Score_Depth temp = quickMiniMax.get(j);
+				temp.propheur = (temp.propheur-minscore)/range+1;
+				quickMiniMax.set(j,temp);
+			}
+
+
+
+			for(int j=0; j<numMoves; j++){
+				System.out.println(quickMiniMax.get(j).propheur);
+				MC_Scores.set(j,quickMiniMax.get(j).propheur*(MC_Scores.get(j)+100));
+			}
+
+			return MC_Scores;
+		}
 		return MC_Scores;
 		//return 0;
 	}
@@ -246,7 +277,7 @@ public class TheEliminator extends HeuristicGamer {
 
 	private double MonteCarlo(MachineState state, long timeout, Move move) throws GoalDefinitionException, TransitionDefinitionException, MoveDefinitionException {
 		List<Double> scores = new ArrayList<Double>();
-		
+
 		while(true){
 			MachineState tempState = state;
 			int levelcount=0;
@@ -254,10 +285,10 @@ public class TheEliminator extends HeuristicGamer {
 			while(true){
 				levelcount++;
 				if(getStateMachine().isTerminal(tempState)){
-					double tempscore = getStateMachine().getGoal(tempState, getRole());
+					//double tempscore = getStateMachine().getGoal(tempState, getRole());
 					//tempscore+=1000.0/(double)levelcount;
 					//	tempscore-=levelcount;
-					//double tempscore =  getRelGoal(tempState);
+					double tempscore =  getRelGoal(tempState);
 					scores.add(tempscore);
 					break;
 				}

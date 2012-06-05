@@ -18,7 +18,7 @@ public class propClassLoader extends ClassLoader{
                 return super.loadClass(name);
 
         try {
-            String url = "file:src/boolPropNet.class";
+            String url = "file:src/boolCode/boolPropNet.class";
             URL myUrl = new URL(url);
             URLConnection connection = myUrl.openConnection();
             InputStream input = connection.getInputStream();
@@ -34,7 +34,7 @@ public class propClassLoader extends ClassLoader{
 
             byte[] classData = buffer.toByteArray();
 
-            return defineClass("boolPropNet",
+            return defineClass("boolCode.boolPropNet",
                     classData, 0, classData.length);
 
         } catch (MalformedURLException e) {
