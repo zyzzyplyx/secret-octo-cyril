@@ -58,6 +58,7 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 	public StateMachine getInitialStateMachine() {	
 		//	return new ProverStateMachine();
 		return new OptimalPropNet();
+		//return new SamplePropNetStateMachine();
 
 	}
 
@@ -71,6 +72,7 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 		/* ***************NOT DOING METAGAMING YET************************/
 		((OptimalPropNet) getStateMachine()).factorDisjunctiveGoalStates(getRole());
 		((OptimalPropNet) getStateMachine()).setHeuristicValues(getRole());
+		getStateMachine().deadStateRemoval(getRole());
 		System.out.println(getStateMachine().getInitialState());
 	}
 
@@ -285,8 +287,9 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 		//System.out.println("timestep_inmax: "+time_step);
 
 		boolean validscore = false;
-		double maxVal = -1000;
+		double maxVal = -10000;
 		int minDepth = 1000;
+		int bestrank = 1000;
 		//choose the move with the max value against a rational player
 		for(int i = 0; i<legalMoves.size(); i++){
 			Move move = legalMoves.get(i);
@@ -299,6 +302,7 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 
 			if(currVal.score >= maxVal) {
 				validscore = true;
+				bestrank = currVal.rank;
 				if(currVal.score>maxVal) {
 					minDepth = currVal.depth;
 					maxVal = currVal.score;
@@ -307,10 +311,17 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 					if(minDepth>=currVal.depth) minDepth = currVal.depth;
 				}
 			}
+			if(bestrank!=1000){
+				if(currVal.rank<bestrank){
+					maxVal = currVal.score;
+					minDepth = currVal.depth;
+					bestrank = currVal.rank;
+				}
+			}
 			//if(currVal.score == 101) return currVal;//  MAYBE CHANGE BACK
 			//	if(currVal==-2) continue;
 		}
-		if(validscore) return new Score_Depth(maxVal,minDepth,-1);
+		if(validscore) return new Score_Depth(maxVal,minDepth,bestrank);
 		return new Score_Depth(0,level,-1);
 		//return maxVal;
 	}
@@ -323,21 +334,30 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 	private Score_Depth minScorePOST(Move move, MachineState state, int level, long timeout) throws MoveDefinitionException, TransitionDefinitionException, GoalDefinitionException{
 		double minVal = MAX_SCORE+100;
 		int maxDepth = 0;
+		int worstrank = 0;
 		boolean validscore = false;
 		//iterate over all possible joint moves, choose lowest scoring
 		List<List<Move>> jointMoves = getStateMachine().getLegalJointMoves(state, getRole(), move);
 		long curr_time = System.currentTimeMillis();
+		if(jointMoves.size()<1) System.out.println("Oh fuck");
 		long time_step = (timeout-curr_time)/jointMoves.size();
 		//System.out.println("timestep_inmin: "+time_step);
 
 		for(int i = 0; i<jointMoves.size(); i++){
 			List<Move> jointMove = jointMoves.get(i);
 			_numStatesExpanded++;
-			Score_Depth currVal = maxScorePOST(getStateMachine().getNextState(state, jointMove), level+1, curr_time + (i+1)*time_step);
+			MachineState nextState = getStateMachine().getNextState(state, jointMove);
+			if (getStateMachine().stateIsDead(nextState)) {
+				return new Score_Depth(-1000, level, -1);
+			}
+			Score_Depth currVal = maxScorePOST(nextState, level+1, curr_time + (i+1)*time_step);
 			//if(currVal==-2)continue;
 			//if(currVal.score==-101) return currVal;  // MAYBE CHANGE BACK
+
+
 			if(currVal.score <= minVal) {
 				validscore = true;
+				worstrank = currVal.rank;
 				//if(validscore) System.out.println("HEREAGAIN");
 				if(currVal.score<minVal) {
 					maxDepth = currVal.depth;
@@ -346,9 +366,21 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 					//minVal = currVal.score;
 					if(currVal.depth>=maxDepth) maxDepth = currVal.depth;
 				}
+
+
 			}
+
+			if(worstrank!=0){
+				if(currVal.rank>worstrank){
+					minVal = currVal.score;
+					maxDepth = currVal.depth;
+					worstrank = currVal.rank;
+				}
+			}
+
+
 		}
-		if(validscore) return new Score_Depth(minVal,maxDepth,-1);
+		if(validscore) return new Score_Depth(minVal,maxDepth,worstrank);
 		return new Score_Depth(0,level,-1);
 		//return minVal;
 	}
@@ -389,8 +421,9 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 			if(allgoals.get(i)>mygoal) rank++;
 
 		}
+		//System.out.println("rank: "+rank);
 		return rank;
-	//	return 0;
+		//	return 0;
 	}
 }
 
