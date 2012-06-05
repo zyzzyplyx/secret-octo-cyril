@@ -115,6 +115,7 @@ public class TheEliminator extends HeuristicGamer {
 		for (int i = 0; i < quickMiniMax.size(); i++) {
 
 			System.out.println("Heur score "+i+": "+ quickMiniMax.get(i).propheur);
+			System.out.println("i: " +i+ "score: " + quickMiniMax.get(i).score);
 
 			if (quickMiniMax.get(i).score == -1000) {
 				numEliminated++;
@@ -129,12 +130,11 @@ public class TheEliminator extends HeuristicGamer {
 		double overtime = (System.currentTimeMillis()-(timeout - (timeout-curr_time)/2));///(timeout - (timeout-curr_time)/2);
 		System.out.println("OVERTIME FRACTION"+overtime);
 		for(int i = 0; i<quickMiniMax.size(); i++){
-			System.out.println("i: " +i+ "score: " + quickMiniMax.get(i).score);
-			if(quickMiniMax.get(i).score==101){
+			if(quickMiniMax.get(i).score==100){
 				List<Double> MC_Scores = new ArrayList<Double>();
 				for(int j=0; j<numMoves; j++){
 					if(quickMiniMax.get(j).score==100){
-						MC_Scores.add(110.0-quickMiniMax.get(j).depth);   //POSSIBLE HEURISTIC
+						MC_Scores.add(1100.0-quickMiniMax.get(j).depth);   //POSSIBLE HEURISTIC
 						//MC_Scores.add(100.0 + 1.0/(double)quickMiniMax.get(j).depth);
 					} else {
 						MC_Scores.add(0.0);
@@ -252,19 +252,32 @@ public class TheEliminator extends HeuristicGamer {
 			if(quickMiniMax.get(j).propheur<minscore) minscore = quickMiniMax.get(j).propheur;
 			if(quickMiniMax.get(j).propheur>maxscore) maxscore = quickMiniMax.get(j).propheur;
 		}
+		double minscoreMonte = 1000000;
+		double maxscoreMonte = -1000000;
+		for(int j=0; j<numMoves; j++){
+			if(MC_Scores.get(j)<minscoreMonte) minscoreMonte = MC_Scores.get(j);
+			if(MC_Scores.get(j)>maxscoreMonte) maxscoreMonte = MC_Scores.get(j);
+		}
 		double range = maxscore - minscore;
+		double rangeMonte = maxscoreMonte - minscoreMonte;
+
 		if(range>=1){
 			for(int j=0; j<numMoves; j++){
 				Score_Depth temp = quickMiniMax.get(j);
-				temp.propheur = (temp.propheur-minscore)/range+1;
+				temp.propheur = (temp.propheur-minscore)/range+0.5;
 				quickMiniMax.set(j,temp);
 			}
-
+			for(int j=0; j<numMoves; j++){
+				double temp = MC_Scores.get(j);
+				//temp = ((temp-minscoreMonte)/rangeMonte+3)*100;
+				temp = (temp+100)*2;
+				MC_Scores.set(j,temp);
+			}
 
 
 			for(int j=0; j<numMoves; j++){
 				System.out.println(quickMiniMax.get(j).propheur);
-				MC_Scores.set(j,quickMiniMax.get(j).propheur*(MC_Scores.get(j)+100));
+				MC_Scores.set(j,quickMiniMax.get(j).propheur*(MC_Scores.get(j)));
 			}
 
 			return MC_Scores;

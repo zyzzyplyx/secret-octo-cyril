@@ -114,14 +114,14 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 		}
 
 		int indexOfBestScore = 0;
-		double bestscore = -102;
+		double bestscore = -10002;
 		for(int i = 0; i<legalMoves.size(); i++) {
 			double score = 0;
 			if (moveScores.size() > i) {
 				score += (moveScores.get(i) * 0)/5;    //RANDOM RATIO FOR HEURISTICS VS MONTE
 			}
 			if (moveScoresPOST.size() > i) {
-				score += ((moveScoresPOST.get(i)) * 5)/5;  //THIS IS THE MONTE RATIO PART
+				score += ((moveScoresPOST.get(i)));  //THIS IS THE MONTE RATIO PART
 			}			
 			//			if (moveScores.size() >= i-1) {
 			//				score += (moveScores.get(i) * 2)/5;    //RANDOM RATIO FOR HEURISTICS VS MONTE
@@ -266,10 +266,8 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 		if(getStateMachine().isTerminal(state)){ //base case 
 			//System.out.println("terminal");
 			double relGoal = getRelGoal(state);
-			//System.out.println("TERMINAL: " +level + " goal: "+relGoal);
-			if(level<=2){
-				//	System.out.println("WE FOUND IT");
-			}
+			System.out.println("TERMINAL: " +level + " goal: "+relGoal);
+
 			//if (relGoal<0) return new Score_Depth(-101,level);
 			//if(relGoal>0) return new Score_Depth(101,level);
 			if (relGoal<0) return new Score_Depth(relGoal,level,getRank(state),((OptimalPropNet)getStateMachine()).getHeuristic(state));
@@ -282,7 +280,7 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 			//System.out.println("heuristic");
 			//return getHeuristicPOST(state, timeout); 
 			_levelcount++;
-			//	System.out.println("level: " +level + " count: "+_levelcount);
+				System.out.println("level: " +level + " count: "+_levelcount);
 			return new Score_Depth(0,level,-1,((OptimalPropNet)getStateMachine()).getHeuristic(state));
 		}
 
@@ -356,7 +354,7 @@ public abstract class HeuristicGamer extends StateMachineGamer {
 			_numStatesExpanded++;
 			MachineState nextState = getStateMachine().getNextState(state, jointMove);
 			if (getStateMachine().stateIsDead(nextState)) {
-				return new Score_Depth(-1000, level, -1,((OptimalPropNet)getStateMachine()).getHeuristic(state));
+				return new Score_Depth(-1000, level, -1,((OptimalPropNet)getStateMachine()).getHeuristic(nextState));
 			}
 			Score_Depth currVal = maxScorePOST(nextState, level+1, curr_time + (i+1)*time_step);
 			//if(currVal==-2)continue;
