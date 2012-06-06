@@ -10,6 +10,7 @@ import player.gamer.event.GamerUnrecognizedMatchEvent;
 import player.gamer.exception.MetaGamingException;
 import player.gamer.exception.MoveSelectionException;
 import util.game.Game;
+import util.gdl.grammar.GdlPool;
 import util.gdl.grammar.GdlProposition;
 import util.gdl.grammar.GdlSentence;
 import util.logging.GamerLogger;
@@ -130,6 +131,7 @@ public abstract class SingleGameGamer extends Gamer implements Subject{
 		
 		stopCleanup (moves);
 		matchCleanup();
+		GdlPool.drainPool();
 		return true;
 	}
 	

@@ -143,4 +143,10 @@ public class ProverStateMachine extends StateMachine
 		// TODO Auto-generated method stub
 		
 	}
+
+	@Override
+	public int factorDisjunctiveGoalStates(Role role) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
 }
