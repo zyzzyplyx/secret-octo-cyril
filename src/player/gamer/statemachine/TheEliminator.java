@@ -281,7 +281,7 @@ public class TheEliminator extends HeuristicGamer {
 			for(int j=0; j<numMoves; j++){
 				double temp = MC_Scores.get(j);
 				//temp = ((temp-minscoreMonte)/rangeMonte+3)*100;
-				temp = (temp+100)*2;
+				temp = (temp+150)*2;
 				MC_Scores.set(j,temp);
 			}
 
