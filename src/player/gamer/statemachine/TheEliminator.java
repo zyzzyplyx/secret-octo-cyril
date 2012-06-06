@@ -275,13 +275,13 @@ public class TheEliminator extends HeuristicGamer {
 		if(range>=1){
 			for(int j=0; j<numMoves; j++){
 				Score_Depth temp = quickMiniMax.get(j);
-				temp.propheur = (temp.propheur-minscore)/range+2;
+				temp.propheur = (temp.propheur-minscore)/range+2.5;
 				quickMiniMax.set(j,temp);
 			}
 			for(int j=0; j<numMoves; j++){
 				double temp = MC_Scores.get(j);
 				//temp = ((temp-minscoreMonte)/rangeMonte+3)*100;
-				temp = (temp+100)*2;
+				temp = (temp+150)*2;
 				MC_Scores.set(j,temp);
 			}
 
