@@ -30,6 +30,7 @@ public abstract class StateMachine
 	public abstract void deadStateRemoval(Role role);
 	public abstract double getHeuristic(MachineState state);
 	public abstract void setHeuristicValues(Role role);
+	public abstract int factorDisjunctiveGoalStates(Role role);
 	
     public abstract StateMachine initialize(List<Gdl> description);
 
