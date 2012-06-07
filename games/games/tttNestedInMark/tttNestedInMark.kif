@@ -1,0 +1,82 @@
+
+( role xplayer ) 
+( role oplayer )
+
+( init ( control xplayer ) )
+
+( ttt_index 1 )
+( ttt_index 2 )
+( ttt_index 3 )
+
+( index 1 )
+( index 2 )
+( index 3 )
+( index 4 )
+( index 5 )
+( index 6 )
+
+( mark xplayer )
+( mark oplayer )
+( mark meta )
+
+( <= ( base ( cell ?i ?j ?m ) ) ( index ?i ) ( index ?j ) ( mark ?m ) )
+( <= ( base ( control ?p ) ) ( role ?p ) )
+( <= ( base ( meta_phase ?p ) ) ( role ?p ) )
+( <= ( base ( can_meta_mark ?p ) ) ( role ?p ) )
+
+( <= ( input ?p noop ) ( role ?p ) )
+( <= ( input ?p ( ttt_mark ?i ?j ) ) ( index ?i ) ( index ?j ) ( role ?p ) )
+( <= ( input ?p ( meta_mark ?i ?j ) ) ( index ?i ) ( index ?j ) ( role ?p ) )
+
+( <= ( filled ?i ?j ) ( true ( cell ?i ?j ?m ) ) )
+
+( <= ( next ( cell ?i ?j ?p ) ) ( does ?p ( ttt_mark ?i ?j ) ) )
+( <= ( next ( cell ?i ?j meta ) ) ( does ?p ( meta_mark ?i ?j ) ) )
+( <= ( next ( cell ?i ?j ?m ) ) ( true ( cell ?i ?j ?m ) ) ( not ( clear ?i ?j ) ) )
+
+( <= ( next ( control oplayer ) ) ( true ( control xplayer ) ) ( role ?p ) ( not ( true ( meta_phase ?p ) ) ) )
+( <= ( next ( control xplayer ) ) ( true ( control oplayer ) ) ( role ?p ) ( not ( true ( meta_phase ?p ) ) ) )
+( <= ( next ( control ?p ) ) ( true ( control ?p ) ) ( true ( meta_phase ?p ) ) )
+( <= ( next ( meta_phase ?p ) ) ( role ?p ) ( ttt_terminal ) ( not ( true ( meta_phase ?p ) ) ) )
+
+( <= ( next ( can_meta_mark ?p ) ) ( role ?p ) ( line ?p ) )
+( <= ( next ( can_meta_mark ?p ) ) ( role ?p ) ( ttt_tie ) )
+
+( <= ( in_ttt ?i ?j ) ( ttt_index ?i ) ( ttt_index ?j ) )
+( <= ( meta_mark_location ?i ?j ) ( index ?i ) ( index ?j ) ( not ( in_ttt ?i ?j ) ) )
+( <= ( clear ?i ?j ) ( ttt_terminal )  ( in_ttt ?i ?j ) )
+
+( <= ( row ?i ?p ) ( ttt_index ?i ) ( true ( cell ?i 1 ?p ) ) 
+  ( true ( cell ?i 2 ?p ) ) ( true ( cell ?i 3 ?p ) ) )
+( <= ( col ?j ?p ) ( ttt_index ?j ) ( true ( cell 1 ?j ?p ) ) 
+  ( true ( cell 2 ?j ?p ) ) ( true ( cell 3 ?j ?p ) ) )
+( <= ( diag ?p ) ( true ( cell 1 1 ?p ) ) 
+  ( true ( cell 2 2 ?p ) ) ( true ( cell 3 3 ?p ) ) )
+( <= ( diag ?p ) ( true ( cell 1 3 ?p ) ) 
+  ( true ( cell 2 2 ?p ) ) ( true ( cell 3 1 ?p ) ) )
+
+( <= ( line ?p ) ( row ?i ?p ) )
+( <= ( line ?p ) ( col ?i ?p ) )
+( <= ( line ?p ) ( diag ?p ) )
+( <= ( ttt_open ) ( ttt_index ?i ) ( ttt_index ?j ) ( not ( filled ?i ?j ) ) )
+
+( <= ( ttt_tie ) ( not ( line xplayer ) ) ( not ( line oplayer ) ) ( not ( ttt_open ) ) )
+
+( <= ( ttt_terminal ) ( ttt_tie ) )
+( <= ( ttt_terminal ) ( line ?p ) )
+
+( <= ( legal ?p noop ) ( role ?p ) ( true ( meta_phase ?p ) ) ( not ( true ( can_meta_mark ?p ) ) ) )
+( <= ( legal ?p noop ) ( role ?p ) ( not ( true ( meta_phase ?p ) ) ) ( not ( true ( control ?p ) ) ) )
+( <= ( legal ?p noop ) ( role ?p ) ( ttt_terminal ) ( not ( true ( meta_phase ?p ) ) ) )
+( <= ( legal ?p ( ttt_mark ?i ?j ) ) ( ttt_index ?i ) ( ttt_index ?j ) ( true ( control ?p ) ) ( not ( filled ?i ?j ) ) ( not ( ttt_terminal ) ) ( not ( true ( meta_phase ?p ) ) ) )
+( <= ( legal ?p ( meta_mark ?i ?j ) ) ( meta_mark_location ?i ?j ) ( true ( can_meta_mark ?p ) ) ( not ( filled ?i ?j ) ) )
+
+( <= ( pattern_achieved xplayer ) ( true ( cell 4 2 meta ) ) ( true ( cell 5 1 meta ) ) ( true ( cell 6 2 meta ) ) )
+( <= ( pattern_achieved oplayer ) ( true ( cell 1 5 meta ) ) ( true ( cell 2 4 meta ) ) ( true ( cell 2 6 meta ) ) )
+
+( <= terminal ( pattern_achieved ?p ) )
+
+( <= ( goal ?p 100 ) ( pattern_achieved ?p ) )
+( <= ( goal ?p 0 ) ( role ?p ) ( not ( pattern_achieved ?p ) ) )
+
+
