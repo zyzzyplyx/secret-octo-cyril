@@ -703,7 +703,7 @@ public class OptimalPropNet extends StateMachine {
 
 	private boolean findGoal(AuxNode goal, List<AuxNode> nextNodes, List<AuxNode> checkedNodes) {
 		for (AuxNode nextNode : nextNodes) {
-			if (nextNode.proposition.equals(goal.proposition)) {
+			if (nextNode.equals(goal.proposition)) {
 				return true;
 			}
 			if (!listContainsNode(checkedNodes, nextNode, false)) {
